@@ -1,0 +1,179 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #8f8e8a;
+  --ink: #0f0f10;
+  --pill-red: #b33a3a;
+  --pill-blue: #2f5bb0;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-italiana), serif;
+  cursor: crosshair;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ---------- Nav ---------- */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 10;
+  padding: 28px 40px 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  border-bottom: 0.5px solid rgba(15,15,16,0.16);
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 72px;
+  font-family: var(--font-cinzel), serif;
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+}
+
+.nav-links a {
+  color: rgba(15,15,16,0.55);
+  text-decoration: none;
+  transition: color 350ms ease, border-color 350ms ease;
+  position: relative;
+  padding: 2px 0;
+}
+.nav-links a:hover { color: #0a0a0a; }
+
+.nav-links a.pill {
+  position: relative;
+  padding: 9px 22px;
+  border: 0.5px solid rgba(15,15,16,0.55);
+  border-radius: 999px;
+  overflow: hidden;
+  isolation: isolate;
+  color: rgba(15,15,16,0.75);
+}
+.nav-links a.pill .pill-label {
+  position: relative;
+  z-index: 2;
+  transition: color 400ms ease;
+}
+.nav-links a.pill::before,
+.nav-links a.pill::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 50%;
+  z-index: 1;
+  transform: scaleX(0);
+  transition: transform 520ms cubic-bezier(.65,.05,.3,1);
+}
+.nav-links a.pill::before {
+  left: 0;
+  background: var(--pill-red);
+  transform-origin: right center;
+}
+.nav-links a.pill::after {
+  right: 0;
+  background: var(--pill-blue);
+  transform-origin: left center;
+}
+.nav-links a.pill:hover::before,
+.nav-links a.pill:hover::after { transform: scaleX(1); }
+.nav-links a.pill:hover {
+  border-color: rgba(15,15,16,0.85);
+}
+.nav-links a.pill:hover .pill-label { color: #fafafa; }
+
+/* ---------- Corner brackets ---------- */
+.corner {
+  position: fixed;
+  width: 42px; height: 42px;
+  pointer-events: none;
+  z-index: 5;
+}
+.corner::before,
+.corner::after {
+  content: '';
+  position: absolute;
+  background: rgba(15,15,16,0.28);
+}
+.corner::before { width: 100%; height: 0.5px; }
+.corner::after  { width: 0.5px; height: 100%; }
+.corner.tl { top: 24px;    left: 24px; }
+.corner.tl::before { top: 0; left: 0; }
+.corner.tl::after  { top: 0; left: 0; }
+.corner.tr { top: 24px; right: 24px; }
+.corner.tr::before { top: 0; right: 0; }
+.corner.tr::after  { top: 0; right: 0; }
+.corner.bl { bottom: 24px; left: 24px; }
+.corner.bl::before { bottom: 0; left: 0; }
+.corner.bl::after  { bottom: 0; left: 0; }
+.corner.br { bottom: 24px; right: 24px; }
+.corner.br::before { bottom: 0; right: 0; }
+.corner.br::after  { bottom: 0; right: 0; }
+
+/* ---------- Vignette ---------- */
+.vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(30,30,32,0.28) 100%);
+  z-index: 6;
+}
+
+/* ---------- Tagline ---------- */
+.tagline {
+  position: fixed;
+  left: 50%;
+  bottom: 34px;
+  transform: translateX(-50%);
+  font-family: var(--font-cinzel), serif;
+  font-weight: 400;
+  font-size: 9px;
+  letter-spacing: 0.6em;
+  text-transform: uppercase;
+  color: rgba(15,15,16,0.42);
+  z-index: 5;
+  white-space: nowrap;
+}
+
+/* ---------- Inner page content ---------- */
+.page-content {
+  position: relative;
+  z-index: 3;
+  padding: 140px 60px 80px;
+  min-height: 100vh;
+  overflow-y: auto;
+}
+
+.page-title {
+  font-family: var(--font-italiana), serif;
+  font-weight: 400;
+  font-size: clamp(48px, 8vw, 120px);
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  margin-bottom: 48px;
+  opacity: 0.88;
+}
+
+.page-body {
+  font-family: var(--font-cinzel), serif;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  line-height: 2.2;
+  color: rgba(15,15,16,0.52);
+  text-transform: uppercase;
+  max-width: 560px;
+}
