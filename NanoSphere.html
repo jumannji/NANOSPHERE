@@ -1,0 +1,648 @@
+<!DOCTYPE html><html lang="en"><head>
+
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NanoSphere — Cultural Transmission</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&amp;family=Italiana&amp;display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #8f8e8a;         /* lighter editorial warm gray */
+    --ink: #0f0f10;
+    --pill-red:  #b33a3a;
+    --pill-blue: #2f5bb0;
+  }
+
+  html, body {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Italiana', serif;
+    cursor: default;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ---------- Nav ---------- */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 10;
+    padding: 28px 40px 22px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 22px;
+    border-bottom: 0.5px solid rgba(15,15,16,0.16);
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 72px;
+    font-family: 'Cinzel', serif;
+    font-weight: 400;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+  }
+
+  .nav-links a {
+    color: rgba(15,15,16,0.55);
+    text-decoration: none;
+    transition: color 350ms ease, border-color 350ms ease;
+    position: relative;
+    padding: 2px 0;
+  }
+  .nav-links a:hover { color: #0a0a0a; }
+
+  /* --- Nanopill: red left-of-center, blue right-of-center on hover --- */
+  .nav-links a.pill {
+    position: relative;
+    padding: 9px 22px;
+    border: 0.5px solid rgba(15,15,16,0.55);
+    border-radius: 999px;
+    overflow: hidden;
+    isolation: isolate;
+    color: rgba(15,15,16,0.75);
+  }
+  .nav-links a.pill .pill-label {
+    position: relative;
+    z-index: 2;
+    transition: color 400ms ease;
+  }
+  .nav-links a.pill::before,
+  .nav-links a.pill::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 50%;
+    z-index: 1;
+    transform: scaleX(0);
+    transition: transform 520ms cubic-bezier(.65,.05,.3,1);
+  }
+  /* left half — red, grows from the center (right edge of this half) outward */
+  .nav-links a.pill::before {
+    left: 0;
+    background: var(--pill-red);
+    transform-origin: right center;
+  }
+  /* right half — blue, grows from the center (left edge of this half) outward */
+  .nav-links a.pill::after {
+    right: 0;
+    background: var(--pill-blue);
+    transform-origin: left center;
+  }
+  .nav-links a.pill:hover::before,
+  .nav-links a.pill:hover::after { transform: scaleX(1); }
+  .nav-links a.pill:hover {
+    border-color: rgba(15,15,16,0.85);
+  }
+  .nav-links a.pill:hover .pill-label { color: #fafafa; }
+
+  /* ---------- Corner brackets ---------- */
+  .corner {
+    position: fixed;
+    width: 42px; height: 42px;
+    pointer-events: none;
+    z-index: 5;
+  }
+  .corner::before,
+  .corner::after {
+    content: '';
+    position: absolute;
+    background: rgba(15,15,16,0.28);
+  }
+  .corner::before { width: 100%; height: 0.5px; }
+  .corner::after  { width: 0.5px; height: 100%; }
+  .corner.tl { top: 24px;    left: 24px; }
+  .corner.tl::before { top: 0; left: 0; } .corner.tl::after { top: 0; left: 0; }
+  .corner.tr { top: 24px; right: 24px; }
+  .corner.tr::before { top: 0; right: 0; } .corner.tr::after { top: 0; right: 0; }
+  .corner.bl { bottom: 24px; left: 24px; }
+  .corner.bl::before { bottom: 0; left: 0; } .corner.bl::after { bottom: 0; left: 0; }
+  .corner.br { bottom: 24px; right: 24px; }
+  .corner.br::before { bottom: 0; right: 0; } .corner.br::after { bottom: 0; right: 0; }
+
+  /* ---------- Hero stage ---------- */
+  main {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  #flow, #rings, #sphere {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+  #rings  { z-index: 1; }
+  #sphere { z-index: 2; }
+  #flow   { z-index: 4; mix-blend-mode: multiply; }
+
+  .logo-wrap {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .logo {
+    font-family: 'Italiana', serif;
+    font-weight: 400;
+    font-size: clamp(72px, 12vw, 188px);
+    letter-spacing: 0.04em;
+    color: var(--ink);
+    white-space: nowrap;
+    user-select: none;
+    will-change: transform;
+    transform-origin: center center;
+    padding: 0.2em 0.4em;
+    cursor: default;
+  }
+
+  .tagline {
+    position: fixed;
+    left: 50%;
+    bottom: 34px;
+    transform: translateX(-50%);
+    font-family: 'Cinzel', serif;
+    font-weight: 400;
+    font-size: 9px;
+    letter-spacing: 0.6em;
+    text-transform: uppercase;
+    color: rgba(15,15,16,0.42);
+    z-index: 5;
+    white-space: nowrap;
+  }
+
+  .vignette {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(30,30,32,0.28) 100%);
+    z-index: 6;
+  }
+</style>
+</head>
+<body style="cursor: crosshair; background-color: rgb(247, 197, 0); font-family: serif;" data-cc-id="cc-1">
+
+  <nav>
+    <div class="nav-links">
+      <a href="#">Articles</a>
+      <a href="#" class="pill"><span class="pill-label">Nanopill</span></a>
+      <a href="#">Merch</a>
+      <a href="#">About</a>
+    </div>
+  </nav>
+
+  <div class="corner tl"></div>
+  <div class="corner tr"></div>
+  <div class="corner bl"></div>
+  <div class="corner br"></div>
+
+  <main style="color: rgba(152, 34, 34, 0.706)">
+    <canvas id="rings" width="2140" height="1336" style="width: 1070px; height: 668px;"></canvas>
+    <canvas id="sphere" width="2140" height="1336" style="width: 1070px; height: 668px;"></canvas>
+
+    <div class="logo-wrap">
+      <div class="logo" id="logo" style="transform: translate(4.78px, -1.32px) rotate(0.559deg); color: rgb(174, 51, 25)">NanoSphere</div>
+    </div>
+
+    <canvas id="flow" width="2140" height="1336" style="width: 1070px; height: 668px;"></canvas>
+  </main>
+
+  <div class="vignette"></div>
+  <div class="tagline">Cultural&nbsp;&nbsp;Transmission</div>
+
+<script>
+(() => {
+  // ================================================================
+  //  Canvas setup
+  // ================================================================
+  const ringsCanvas  = document.getElementById('rings');
+  const sphereCanvas = document.getElementById('sphere');
+  const flowCanvas   = document.getElementById('flow');
+  const ringsCtx  = ringsCanvas.getContext('2d');
+  const sphereCtx = sphereCanvas.getContext('2d');
+  const flowCtx   = flowCanvas.getContext('2d');
+
+  let W = 0, H = 0, DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+  function resize() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    for (const c of [ringsCanvas, sphereCanvas, flowCanvas]) {
+      c.width  = Math.floor(W * DPR);
+      c.height = Math.floor(H * DPR);
+      c.style.width  = W + 'px';
+      c.style.height = H + 'px';
+    }
+    ringsCtx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    sphereCtx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    flowCtx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // ================================================================
+  //  Mouse
+  // ================================================================
+  const mouse = { x: -9999, y: -9999, inside: false };
+  window.addEventListener('mousemove', (e) => {
+    mouse.x = e.clientX; mouse.y = e.clientY; mouse.inside = true;
+  });
+  window.addEventListener('mouseleave', () => { mouse.inside = false; });
+
+  // ================================================================
+  //  Logo gentle float
+  // ================================================================
+  const logo = document.getElementById('logo');
+  function animateLogo(t) {
+    const r = 5;
+    const tx = Math.cos(t * 0.00025) * r;
+    const ty = Math.sin(t * 0.00020) * r * 0.7;
+    const rot = Math.sin(t * 0.00018) * 1.0;
+    logo.style.transform = `translate(${tx.toFixed(2)}px, ${ty.toFixed(2)}px) rotate(${rot.toFixed(3)}deg)`;
+  }
+
+  // ================================================================
+  //  Concentric faint orbit rings (kept — they're unobtrusive)
+  // ================================================================
+  const rings = [
+    { phase: 0.0, speed: 0.00040, rScale: 0.86 },
+    { phase: 1.3, speed: 0.00055, rScale: 0.68 },
+    { phase: 2.6, speed: 0.00035, rScale: 0.52 },
+    { phase: 4.0, speed: 0.00060, rScale: 0.38 },
+    { phase: 5.4, speed: 0.00045, rScale: 0.26 },
+  ];
+  function drawRings(t) {
+    ringsCtx.clearRect(0, 0, W, H);
+    const cx = W / 2, cy = H / 2;
+    const baseR = Math.min(W, H) * 0.48;
+    ringsCtx.lineWidth = 0.5;
+    for (const ring of rings) {
+      const pulse = Math.sin(t * ring.speed + ring.phase) * 0.5 + 0.5;
+      const r = baseR * ring.rScale * (0.96 + pulse * 0.08);
+      const opacity = 0.05 + pulse * 0.05;
+      ringsCtx.strokeStyle = `rgba(20,20,18,${opacity.toFixed(3)})`;
+      ringsCtx.beginPath();
+      ringsCtx.arc(cx, cy, r, 0, Math.PI * 2);
+      ringsCtx.stroke();
+    }
+  }
+
+  // ================================================================
+  //  Wireframe sphere — thin latitude + longitude great circles,
+  //  rotating slowly. Sits behind the logo. Much more refined than
+  //  the marble bubbles.
+  // ================================================================
+  // Pre-generated point sets on a unit sphere for latitude & longitude
+  // circles. Each circle is a closed polyline we project each frame.
+  const SPHERE_CIRCLES = (() => {
+    const arr = [];
+    const segs = 96;
+    // Longitudes: circles passing through poles at different Y-axis angles
+    const numLong = 9;
+    for (let i = 0; i < numLong; i++) {
+      const theta = (i / numLong) * Math.PI;
+      const pts = [];
+      for (let s = 0; s < segs; s++) {
+        const u = (s / segs) * Math.PI * 2;
+        // circle in the plane defined by rotating the XZ-plane around Y by theta
+        const x = Math.cos(u) * Math.cos(theta);
+        const y = Math.sin(u);
+        const z = Math.cos(u) * Math.sin(theta);
+        pts.push([x, y, z]);
+      }
+      arr.push({ kind: 'long', pts });
+    }
+    // Latitudes: horizontal slices (constant y)
+    const lats = [-0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75];
+    for (const ly of lats) {
+      const r = Math.sqrt(1 - ly * ly);
+      const pts = [];
+      for (let s = 0; s < segs; s++) {
+        const u = (s / segs) * Math.PI * 2;
+        pts.push([Math.cos(u) * r, ly, Math.sin(u) * r]);
+      }
+      arr.push({ kind: 'lat', pts });
+    }
+    return arr;
+  })();
+
+  function drawSphere(t) {
+    sphereCtx.clearRect(0, 0, W, H);
+    const cx = W / 2, cy = H / 2;
+    const R = Math.min(W, H) * 0.38; // bigger than the logo — surrounds it
+
+    // Rotation matrices (very slow)
+    const ay = t * 0.00012;            // yaw
+    const ax = Math.sin(t*0.00007)*0.28; // slight nod
+    const cy_ = Math.cos(ay), sy_ = Math.sin(ay);
+    const cx_ = Math.cos(ax), sx_ = Math.sin(ax);
+
+    function proj(p) {
+      // rotate around Y then X
+      let x = p[0]*cy_ + p[2]*sy_;
+      let z = -p[0]*sy_ + p[2]*cy_;
+      let y = p[1]*cx_ - z*sx_;
+      z = p[1]*sx_ + z*cx_;
+      // (no perspective — orthographic, cleaner)
+      return { x: cx + x*R, y: cy + y*R, z };
+    }
+
+    sphereCtx.lineWidth = 0.5;
+    for (const c of SPHERE_CIRCLES) {
+      // project all points
+      const projected = c.pts.map(proj);
+      // draw as segments, opacity modulated by depth
+      for (let i = 0; i < projected.length; i++) {
+        const a = projected[i];
+        const b = projected[(i + 1) % projected.length];
+        const zMid = (a.z + b.z) * 0.5;
+        // z in [-1,1]; front = 1
+        const depth = (zMid + 1) * 0.5; // 0..1
+        // front-facing lines darker, back-facing very faint
+        const op = 0.03 + depth * 0.22;
+        sphereCtx.strokeStyle = `rgba(18,18,20,${op.toFixed(3)})`;
+        sphereCtx.beginPath();
+        sphereCtx.moveTo(a.x, a.y);
+        sphereCtx.lineTo(b.x, b.y);
+        sphereCtx.stroke();
+      }
+    }
+
+    // outer horizon circle — thin, definitive
+    sphereCtx.lineWidth = 0.5;
+    sphereCtx.strokeStyle = 'rgba(18,18,20,0.32)';
+    sphereCtx.beginPath();
+    sphereCtx.arc(cx, cy, R, 0, Math.PI * 2);
+    sphereCtx.stroke();
+  }
+
+  // ================================================================
+  //  Color flow system
+  //  -----------------------------------------------------------
+  //  * Particles emit ONLY while cursor is over the logo letters
+  //    (tested against the sampled ink mask).
+  //  * Particles follow the cursor AROUND the page — each has a
+  //    persistent attraction toward the current cursor position,
+  //    so the trail drifts with the mouse wherever it goes.
+  //  * Slower overall motion + longer life for a floatier feel.
+  //  * Palette = electric + dark blues only.
+  // ================================================================
+  const WORD = 'NanoSphere';
+  const BLUE_PALETTE = [
+    { r:   8, g:  18, b:  54 }, // near-black navy
+    { r:  14, g:  34, b:  92 }, // deep royal
+    { r:  22, g:  58, b: 148 }, // indigo
+    { r:  30, g:  82, b: 190 }, // electric cobalt
+    { r:  52, g: 116, b: 230 }, // electric blue
+    { r:  92, g: 172, b: 255 }, // bright sky electric
+    { r:  20, g:  76, b: 128 }, // teal-navy
+    { r:   6, g:  10, b:  30 }, // almost-black blue
+    { r:  74, g: 140, b: 222 }, // periwinkle
+    { r:  38, g:  98, b: 204 }, // azure
+  ];
+
+  // zone sampled points (one per letter) — same structure as before
+  let zonePoints = [];
+  // a flat ink-mask lookup to quickly test "is cursor on the letterforms?"
+  let inkMask = null; // { data: Uint8Array, w, h, x0, y0 }  (1 per pixel)
+  let logoBox = null;
+
+  function sampleLogoPoints() {
+    const rect = logo.getBoundingClientRect();
+    if (!rect.width || !rect.height) { zonePoints = []; logoBox = null; inkMask = null; return; }
+    logoBox = rect;
+
+    const cs = getComputedStyle(logo);
+    const fontSize = parseFloat(cs.fontSize);
+    const fontFamily = cs.fontFamily;
+    const fontWeight = cs.fontWeight;
+
+    const scale = 2;
+    const padX = Math.ceil(fontSize * 0.4);
+    const padY = Math.ceil(fontSize * 0.3);
+    const ow = Math.ceil((rect.width + padX * 2) * scale);
+    const oh = Math.ceil((rect.height + padY * 2) * scale);
+    const off = document.createElement('canvas');
+    off.width = ow; off.height = oh;
+    const octx = off.getContext('2d');
+
+    octx.fillStyle = '#000';
+    octx.fillRect(0, 0, ow, oh);
+    octx.fillStyle = '#fff';
+    octx.textBaseline = 'middle';
+    octx.textAlign = 'center';
+    octx.font = `${fontWeight} ${fontSize * scale}px ${fontFamily}`;
+    octx.fillText(WORD, ow / 2, oh / 2);
+
+    const img = octx.getImageData(0, 0, ow, oh).data;
+
+    // Downsampled ink mask for fast hit-test (1 byte per pixel)
+    const mScale = 2; // screen-pixel resolution of the mask
+    const mw = Math.ceil(rect.width / mScale) + 2;
+    const mh = Math.ceil(rect.height / mScale) + 2;
+    const mask = new Uint8Array(mw * mh);
+
+    const zones = Array.from({ length: WORD.length }, () => []);
+    const step = 3;
+    const xStart = padX * scale;
+    const xEnd   = (padX + rect.width) * scale;
+    const textW  = Math.max(1, xEnd - xStart);
+
+    for (let y = 0; y < oh; y += step) {
+      for (let x = 0; x < ow; x += step) {
+        const idx = (y * ow + x) * 4;
+        if (img[idx] > 160) {
+          const u = (x - xStart) / textW;
+          const zi = Math.max(0, Math.min(WORD.length - 1, Math.floor(u * WORD.length)));
+          const sx = rect.left - padX + x / scale;
+          const sy = rect.top  - padY + y / scale;
+          zones[zi].push({ x: sx, y: sy });
+
+          // mark mask (use a small disc so the mask has some forgiveness)
+          const mx = Math.floor((sx - rect.left) / mScale);
+          const my = Math.floor((sy - rect.top)  / mScale);
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              const xx = mx + dx, yy = my + dy;
+              if (xx >= 0 && yy >= 0 && xx < mw && yy < mh) {
+                mask[yy * mw + xx] = 1;
+              }
+            }
+          }
+        }
+      }
+    }
+    zonePoints = zones;
+    inkMask = { data: mask, w: mw, h: mh, mScale };
+  }
+
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(sampleLogoPoints);
+  } else {
+    window.addEventListener('load', sampleLogoPoints);
+  }
+  window.addEventListener('resize', () => setTimeout(sampleLogoPoints, 50));
+
+  function cursorOnInk() {
+    if (!inkMask || !logoBox || !mouse.inside) return false;
+    const lx = mouse.x - logoBox.left;
+    const ly = mouse.y - logoBox.top;
+    if (lx < 0 || ly < 0 || lx > logoBox.width || ly > logoBox.height) return false;
+    const mx = Math.floor(lx / inkMask.mScale);
+    const my = Math.floor(ly / inkMask.mScale);
+    if (mx < 0 || my < 0 || mx >= inkMask.w || my >= inkMask.h) return false;
+    return inkMask.data[my * inkMask.w + mx] === 1;
+  }
+
+  // ================================================================
+  //  Particles
+  // ================================================================
+  const particles = [];
+  const MAX_PARTICLES = 1400;
+
+  function fadeFlowCanvas() {
+    flowCtx.globalCompositeOperation = 'destination-out';
+    flowCtx.fillStyle = 'rgba(0,0,0,0.05)'; // slower fade for dreamier trails
+    flowCtx.fillRect(0, 0, W, H);
+    flowCtx.globalCompositeOperation = 'source-over';
+  }
+
+  function spawnFromZone(zi, count) {
+    const pts = zonePoints[zi];
+    if (!pts || !pts.length) return;
+    // Each zone still has its own tint, but all within the blue palette.
+    const col = BLUE_PALETTE[zi % BLUE_PALETTE.length];
+    for (let i = 0; i < count; i++) {
+      if (particles.length >= MAX_PARTICLES) break;
+      const p = pts[(Math.random() * pts.length) | 0];
+      const ang = Math.random() * Math.PI * 2;
+      const speed = 0.18 + Math.random() * 0.45;   // slower base speed
+      const life = 2800 + Math.random() * 2600;    // longer life -> follow cursor
+
+      particles.push({
+        x: p.x, y: p.y,
+        vx: Math.cos(ang) * speed,
+        vy: Math.sin(ang) * speed,
+        life, maxLife: life,
+        size: 1.6 + Math.random() * 2.6,
+        r: col.r, g: col.g, b: col.b,
+        alpha0: 0.28 + Math.random() * 0.28,
+        wob: Math.random() * Math.PI * 2,
+        wobSpeed: 0.0008 + Math.random() * 0.0012,
+      });
+    }
+  }
+
+  function updateParticles(dt) {
+    fadeFlowCanvas();
+    flowCtx.globalCompositeOperation = 'source-over';
+
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.life -= dt;
+      if (p.life <= 0) { particles.splice(i, 1); continue; }
+
+      // Persistent attraction toward the LIVE cursor position (so
+      // trails follow the cursor as it moves across the page).
+      if (mouse.inside) {
+        const tdx = mouse.x - p.x;
+        const tdy = mouse.y - p.y;
+        const td = Math.hypot(tdx, tdy) || 1;
+        // gentle pull — stronger when far, weaker when close
+        const pull = 0.015 + Math.min(0.04, td * 0.00008);
+        p.vx += (tdx / td) * pull;
+        p.vy += (tdy / td) * pull;
+      }
+
+      // wobble
+      p.wob += p.wobSpeed * dt;
+      const w = 0.02;
+      p.vx += Math.cos(p.wob + Math.PI/2) * w;
+      p.vy += Math.sin(p.wob + Math.PI/2) * w;
+
+      // drag — slower overall
+      p.vx *= 0.985;
+      p.vy *= 0.985;
+
+      // cap speed
+      const sp = Math.hypot(p.vx, p.vy);
+      const maxSp = 1.6;
+      if (sp > maxSp) { p.vx *= maxSp/sp; p.vy *= maxSp/sp; }
+
+      p.x += p.vx * dt * 0.05;   // reduced step multiplier for slower overall motion
+      p.y += p.vy * dt * 0.05;
+
+      const lifeT = p.life / p.maxLife;
+      const fadeIn = Math.min(1, (1 - lifeT) * 5);
+      const a = p.alpha0 * lifeT * fadeIn;
+
+      const rad = p.size * (1.2 + (1 - lifeT) * 1.4);
+      const grad = flowCtx.createRadialGradient(p.x, p.y, 0, p.x, p.y, rad * 2.6);
+      grad.addColorStop(0,   `rgba(${p.r},${p.g},${p.b},${a.toFixed(3)})`);
+      grad.addColorStop(0.5, `rgba(${p.r},${p.g},${p.b},${(a*0.35).toFixed(3)})`);
+      grad.addColorStop(1,   `rgba(${p.r},${p.g},${p.b},0)`);
+      flowCtx.fillStyle = grad;
+      flowCtx.beginPath();
+      flowCtx.arc(p.x, p.y, rad * 2.6, 0, Math.PI * 2);
+      flowCtx.fill();
+    }
+  }
+
+  // ================================================================
+  //  Spawning: ONLY while the cursor is actually over letter ink.
+  //  Zone is determined by the cursor's x-position within the logo.
+  // ================================================================
+  function spawnIfOverInk(dt) {
+    if (!cursorOnInk()) return;
+    const u = Math.max(0, Math.min(0.9999, (mouse.x - logoBox.left) / logoBox.width));
+    const zi = Math.floor(u * WORD.length);
+    // slower emission rate
+    const baseRate = 14;
+    const spawn = Math.max(1, Math.floor(baseRate * (dt / 16.7)));
+    spawnFromZone(zi, spawn);
+    if (zi > 0)                spawnFromZone(zi - 1, Math.ceil(spawn * 0.35));
+    if (zi < WORD.length - 1)  spawnFromZone(zi + 1, Math.ceil(spawn * 0.35));
+  }
+
+  // ================================================================
+  //  Main loop
+  // ================================================================
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(50, now - last);
+    last = now;
+
+    drawRings(now);
+    drawSphere(now);
+    animateLogo(now);
+
+    spawnIfOverInk(dt);
+    updateParticles(dt);
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+
+
+</body></html>
