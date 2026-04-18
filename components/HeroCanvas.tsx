@@ -4,39 +4,18 @@ import { useEffect, useRef } from 'react'
 
 const WORD = 'NanoSphere'
 
-// Vivid electric blues (#4488ff territory and brighter)
-const BLUE_PALETTE = [
-  { r:  68, g: 136, b: 255 }, // #4488ff
-  { r:  40, g: 110, b: 255 },
-  { r:  80, g: 160, b: 255 },
-  { r:  30, g:  90, b: 240 },
-  { r: 100, g: 180, b: 255 },
-  { r:  55, g: 125, b: 255 },
-  { r:  20, g:  70, b: 220 },
-]
-const RED_PALETTE = [
-  { r: 220, g:  40, b:  60 },
-  { r: 200, g:  30, b:  50 },
-  { r: 240, g:  60, b:  80 },
-  { r: 180, g:  20, b:  40 },
-  { r: 255, g:  70, b:  90 },
-  { r: 210, g:  45, b:  65 },
-  { r: 190, g:  25, b:  45 },
-]
-
-function pickBlendedColor(u: number) {
-  const blue = BLUE_PALETTE[(Math.random() * BLUE_PALETTE.length) | 0]
-  const red  = RED_PALETTE [(Math.random() * RED_PALETTE.length ) | 0]
-  // Blue on left half of logo, red on right, smooth blend in middle
+// Deterministic blue→red gradient along the logo width (no randomness — ribbon needs consistent color)
+function getColorForU(u: number) {
   let t: number
   if (u <= 0.38) t = 0
   else if (u >= 0.62) t = 1
   else t = (u - 0.38) / 0.24
-  t = t * t * (3 - 2 * t)
+  t = t * t * (3 - 2 * t) // smoothstep
+  // Blue: #4488ff (68,136,255) → Red: #dc2840 (220,40,64)
   return {
-    r: Math.round(blue.r + (red.r - blue.r) * t),
-    g: Math.round(blue.g + (red.g - blue.g) * t),
-    b: Math.round(blue.b + (red.b - blue.b) * t),
+    r: Math.round(68  + (220 - 68)  * t),
+    g: Math.round(136 + (40  - 136) * t),
+    b: Math.round(255 + (64  - 255) * t),
   }
 }
 
@@ -78,15 +57,21 @@ const RINGS_DEF = [
   { phase: 5.4, speed: 0.00045, rScale: 0.26 },
 ]
 
-interface Particle {
-  x: number; y: number
-  vx: number; vy: number
-  life: number; maxLife: number
-  size: number
-  r: number; g: number; b: number
-  alpha0: number
-  wob: number; wobSpeed: number
+interface TrailPoint {
+  x: number
+  y: number
+  t: number   // timestamp ms
+  u: number   // 0–1 horizontal position in logo (drives color)
 }
+
+// Ribbon passes: outer bloom → inner glow → bright core
+const RIBBON_PASSES = [
+  { widthPx: 42, alphaMult: 0.055, whiten: 0.0 },
+  { widthPx: 18, alphaMult: 0.18,  whiten: 0.0 },
+  { widthPx:  6, alphaMult: 0.55,  whiten: 0.0 },
+  { widthPx:  1.5, alphaMult: 0.92, whiten: 0.55 }, // hot core
+]
+const TRAIL_LIFE_MS = 1600
 
 export default function HeroCanvas() {
   const ringsRef  = useRef<HTMLCanvasElement>(null)
@@ -124,125 +109,13 @@ export default function HeroCanvas() {
     resize()
     window.addEventListener('resize', resize)
 
-    // Mouse with smoothed velocity for trail direction
-    const mouse = { x: -9999, y: -9999, inside: false, vx: 0, vy: 0 }
-    const onMouseMove = (e: MouseEvent) => {
-      const rawVx = e.clientX - mouse.x
-      const rawVy = e.clientY - mouse.y
-      // Exponential moving average — smooths jitter while staying responsive
-      mouse.vx = mouse.vx * 0.35 + rawVx * 0.65
-      mouse.vy = mouse.vy * 0.35 + rawVy * 0.65
-      mouse.x = e.clientX
-      mouse.y = e.clientY
-      mouse.inside = true
-    }
-    const onMouseLeave = () => { mouse.inside = false; mouse.vx = 0; mouse.vy = 0 }
-    window.addEventListener('mousemove', onMouseMove)
-    window.addEventListener('mouseleave', onMouseLeave)
+    const mouse = { x: -9999, y: -9999, inside: false }
 
-    // ---- logo float ----
-    function animateLogo(t: number) {
-      const r = 5
-      const tx = Math.cos(t * 0.00025) * r
-      const ty = Math.sin(t * 0.00020) * r * 0.7
-      const rot = Math.sin(t * 0.00018) * 1.0
-      logo.style.transform = `translate(${tx.toFixed(2)}px,${ty.toFixed(2)}px) rotate(${rot.toFixed(3)}deg)`
-    }
-
-    // ---- orbit rings ----
-    function drawRings(t: number) {
-      ringsCtx.clearRect(0, 0, W, H)
-      const cx = W / 2, cy = H / 2
-      const baseR = Math.min(W, H) * 0.48
-      ringsCtx.lineWidth = 0.5
-      for (const ring of RINGS_DEF) {
-        const pulse = Math.sin(t * ring.speed + ring.phase) * 0.5 + 0.5
-        const r = baseR * ring.rScale * (0.96 + pulse * 0.08)
-        const opacity = 0.05 + pulse * 0.05
-        ringsCtx.strokeStyle = `rgba(20,20,18,${opacity.toFixed(3)})`
-        ringsCtx.beginPath()
-        ringsCtx.arc(cx, cy, r, 0, Math.PI * 2)
-        ringsCtx.stroke()
-      }
-    }
-
-    // ---- cyberpunk wireframe sphere ----
-    function drawSphere(t: number) {
-      sphereCtx.clearRect(0, 0, W, H)
-      const cx = W / 2, cy = H / 2
-      const R = Math.min(W, H) * 0.38
-
-      const ay = t * 0.00012
-      const ax = Math.sin(t * 0.00007) * 0.28
-      const cy_ = Math.cos(ay), sy_ = Math.sin(ay)
-      const cx_ = Math.cos(ax), sx_ = Math.sin(ax)
-
-      function proj(p: number[]) {
-        let x = p[0] * cy_ + p[2] * sy_
-        let z = -p[0] * sy_ + p[2] * cy_
-        let y = p[1] * cx_ - z * sx_
-        z = p[1] * sx_ + z * cx_
-        return { x: cx + x * R, y: cy + y * R, z }
-      }
-
-      // Subtle flicker — two overlapping sine waves at prime-ish frequencies
-      const flicker = 0.82 + Math.sin(t * 0.053) * 0.10 + Math.sin(t * 0.029) * 0.08
-
-      // Pass 1: wide soft glow (cyan-electric blue)
-      for (const c of SPHERE_CIRCLES) {
-        const projected = c.pts.map(proj)
-        for (let i = 0; i < projected.length; i++) {
-          const a = projected[i]
-          const b = projected[(i + 1) % projected.length]
-          const zMid = (a.z + b.z) * 0.5
-          const depth = (zMid + 1) * 0.5
-          const op = (0.012 + depth * 0.055) * flicker
-          sphereCtx.strokeStyle = `rgba(0,190,255,${op.toFixed(3)})`
-          sphereCtx.lineWidth = 3.5
-          sphereCtx.beginPath()
-          sphereCtx.moveTo(a.x, a.y)
-          sphereCtx.lineTo(b.x, b.y)
-          sphereCtx.stroke()
-        }
-      }
-
-      // Pass 2: crisp fine lines with depth-modulated opacity
-      for (const c of SPHERE_CIRCLES) {
-        const projected = c.pts.map(proj)
-        for (let i = 0; i < projected.length; i++) {
-          const a = projected[i]
-          const b = projected[(i + 1) % projected.length]
-          const zMid = (a.z + b.z) * 0.5
-          const depth = (zMid + 1) * 0.5
-          const op = (0.06 + depth * 0.32) * flicker
-          sphereCtx.strokeStyle = `rgba(80,210,255,${op.toFixed(3)})`
-          sphereCtx.lineWidth = 0.5
-          sphereCtx.beginPath()
-          sphereCtx.moveTo(a.x, a.y)
-          sphereCtx.lineTo(b.x, b.y)
-          sphereCtx.stroke()
-        }
-      }
-
-      // Horizon circle — glow + crisp
-      sphereCtx.beginPath()
-      sphereCtx.arc(cx, cy, R, 0, Math.PI * 2)
-      sphereCtx.lineWidth = 3
-      sphereCtx.strokeStyle = `rgba(0,200,255,${(0.10 * flicker).toFixed(3)})`
-      sphereCtx.stroke()
-
-      sphereCtx.beginPath()
-      sphereCtx.arc(cx, cy, R, 0, Math.PI * 2)
-      sphereCtx.lineWidth = 0.8
-      sphereCtx.strokeStyle = `rgba(100,225,255,${(0.45 * flicker).toFixed(3)})`
-      sphereCtx.stroke()
-    }
-
-    // ---- ink mask for logo hit-testing ----
+    // ---- ink mask (for cursor-on-letter detection) ----
     let inkMask: { data: Uint8Array; w: number; h: number; mScale: number } | null = null
     let logoBox: DOMRect | null = null
 
-    function sampleLogoPoints() {
+    function sampleLogoMask() {
       const rect = logo.getBoundingClientRect()
       if (!rect.width || !rect.height) { logoBox = null; inkMask = null; return }
       logoBox = rect
@@ -292,12 +165,9 @@ export default function HeroCanvas() {
       inkMask = { data: mask, w: mw, h: mh, mScale }
     }
 
-    if (document.fonts?.ready) {
-      document.fonts.ready.then(sampleLogoPoints)
-    } else {
-      window.addEventListener('load', sampleLogoPoints)
-    }
-    const onResizeSample = () => setTimeout(sampleLogoPoints, 50)
+    if (document.fonts?.ready) document.fonts.ready.then(sampleLogoMask)
+    else window.addEventListener('load', sampleLogoMask)
+    const onResizeSample = () => setTimeout(sampleLogoMask, 50)
     window.addEventListener('resize', onResizeSample)
 
     function cursorOnInk() {
@@ -311,92 +181,203 @@ export default function HeroCanvas() {
       return inkMask.data[my * inkMask.w + mx] === 1
     }
 
-    // ---- cursor-trailing particles ----
-    const particles: Particle[] = []
-    const MAX_PARTICLES = 2000
+    // ---- trail ----
+    const trail: TrailPoint[] = []
 
-    function fadeFlowCanvas() {
-      flowCtx.globalCompositeOperation = 'destination-out'
-      // Moderate fade — trails dissolve in ~8-10 frames
-      flowCtx.fillStyle = 'rgba(0,0,0,0.13)'
-      flowCtx.fillRect(0, 0, W, H)
-      flowCtx.globalCompositeOperation = 'source-over'
+    const onMouseMove = (e: MouseEvent) => {
+      mouse.x = e.clientX
+      mouse.y = e.clientY
+      mouse.inside = true
+
+      // Sample a trail point if cursor is on letter ink
+      if (cursorOnInk() && logoBox) {
+        const last = trail[trail.length - 1]
+        // Min 4px spacing so we don't oversample while still smooth
+        if (!last || Math.hypot(e.clientX - last.x, e.clientY - last.y) >= 4) {
+          const u = Math.max(0, Math.min(1, (e.clientX - logoBox.left) / logoBox.width))
+          trail.push({ x: e.clientX, y: e.clientY, t: performance.now(), u })
+          if (trail.length > 600) trail.shift() // hard cap
+        }
+      }
+    }
+    const onMouseLeave = () => { mouse.inside = false }
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseleave', onMouseLeave)
+
+    // ---- logo float ----
+    function animateLogo(t: number) {
+      const r = 5
+      const tx = Math.cos(t * 0.00025) * r
+      const ty = Math.sin(t * 0.00020) * r * 0.7
+      const rot = Math.sin(t * 0.00018) * 1.0
+      logo.style.transform = `translate(${tx.toFixed(2)}px,${ty.toFixed(2)}px) rotate(${rot.toFixed(3)}deg)`
     }
 
-    function spawnTrailParticles(dt: number) {
-      if (!cursorOnInk() || !logoBox) return
-
-      const u = Math.max(0, Math.min(1, (mouse.x - logoBox.left) / logoBox.width))
-      const col = pickBlendedColor(u)
-
-      const baseRate = 26
-      const count = Math.max(1, Math.floor(baseRate * (dt / 16.7)))
-
-      for (let i = 0; i < count; i++) {
-        if (particles.length >= MAX_PARTICLES) break
-
-        // Small spread around cursor so trail has width, not just a point
-        const spread = 5
-        const ox = (Math.random() - 0.5) * spread
-        const oy = (Math.random() - 0.5) * spread
-
-        // Particles inherit a fraction of cursor velocity — cursor moves ahead,
-        // particles lag behind, naturally forming a trail
-        const trailFrac = 0.15 + Math.random() * 0.20
-        const life = 320 + Math.random() * 280
-
-        particles.push({
-          x: mouse.x + ox,
-          y: mouse.y + oy,
-          vx: mouse.vx * trailFrac,
-          vy: mouse.vy * trailFrac,
-          life,
-          maxLife: life,
-          size: 11 + Math.random() * 15,
-          r: col.r, g: col.g, b: col.b,
-          alpha0: 0.10 + Math.random() * 0.10,
-          wob: Math.random() * Math.PI * 2,
-          wobSpeed: 0.0014 + Math.random() * 0.0010,
-        })
+    // ---- orbit rings ----
+    function drawRings(t: number) {
+      ringsCtx.clearRect(0, 0, W, H)
+      const cx = W / 2, cy = H / 2
+      const baseR = Math.min(W, H) * 0.48
+      ringsCtx.lineWidth = 0.5
+      for (const ring of RINGS_DEF) {
+        const pulse = Math.sin(t * ring.speed + ring.phase) * 0.5 + 0.5
+        const r = baseR * ring.rScale * (0.96 + pulse * 0.08)
+        const opacity = 0.04 + pulse * 0.04
+        ringsCtx.strokeStyle = `rgba(20,20,18,${opacity.toFixed(3)})`
+        ringsCtx.beginPath()
+        ringsCtx.arc(cx, cy, r, 0, Math.PI * 2)
+        ringsCtx.stroke()
       }
     }
 
-    function updateParticles(dt: number) {
-      fadeFlowCanvas()
-      flowCtx.globalCompositeOperation = 'source-over'
+    // ---- silver/chrome wireframe sphere ----
+    function drawSphere(t: number) {
+      sphereCtx.clearRect(0, 0, W, H)
+      const cx = W / 2, cy = H / 2
+      const R = Math.min(W, H) * 0.38
 
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i]
-        p.life -= dt
-        if (p.life <= 0) { particles.splice(i, 1); continue }
+      const ay = t * 0.00012
+      const ax = Math.sin(t * 0.00007) * 0.28
+      const cy_ = Math.cos(ay), sy_ = Math.sin(ay)
+      const cx_ = Math.cos(ax), sx_ = Math.sin(ax)
 
-        // Very gentle lateral wobble for organic softness
-        p.wob += p.wobSpeed * dt
-        p.vx += Math.cos(p.wob) * 0.006
+      function proj(p: number[]) {
+        let x = p[0] * cy_ + p[2] * sy_
+        let z = -p[0] * sy_ + p[2] * cy_
+        let y = p[1] * cx_ - z * sx_
+        z = p[1] * sx_ + z * cx_
+        return { x: cx + x * R, y: cy + y * R, z }
+      }
 
-        // Heavy drag — trail dissipates within ~15 frames
-        p.vx *= 0.90
-        p.vy *= 0.90
+      // Metallic sheen: two overlapping sine waves simulate the shimmer as sphere rotates
+      const sheen = 0.88 + Math.sin(t * 0.053) * 0.07 + Math.sin(t * 0.031) * 0.05
 
-        p.x += p.vx * dt * 0.07
-        p.y += p.vy * dt * 0.07
+      // Pass 1 — soft silver halo (wide glow)
+      sphereCtx.lineWidth = 3
+      for (const c of SPHERE_CIRCLES) {
+        const projected = c.pts.map(proj)
+        for (let i = 0; i < projected.length; i++) {
+          const a = projected[i]
+          const b = projected[(i + 1) % projected.length]
+          const depth = ((a.z + b.z) * 0.5 + 1) * 0.5
+          const op = (0.012 + depth * 0.048) * sheen
+          sphereCtx.strokeStyle = `rgba(155,160,178,${op.toFixed(3)})`
+          sphereCtx.beginPath()
+          sphereCtx.moveTo(a.x, a.y)
+          sphereCtx.lineTo(b.x, b.y)
+          sphereCtx.stroke()
+        }
+      }
 
-        const lifeT = p.life / p.maxLife
-        // Quick fade-in (appears instantly), smooth fade-out
-        const fadeIn = Math.min(1, (1 - lifeT) * 10)
-        const a = p.alpha0 * lifeT * fadeIn
+      // Pass 2 — chrome mid-tone lines
+      sphereCtx.lineWidth = 0.5
+      for (const c of SPHERE_CIRCLES) {
+        const projected = c.pts.map(proj)
+        for (let i = 0; i < projected.length; i++) {
+          const a = projected[i]
+          const b = projected[(i + 1) % projected.length]
+          const depth = ((a.z + b.z) * 0.5 + 1) * 0.5
+          const op = (0.06 + depth * 0.30) * sheen
+          sphereCtx.strokeStyle = `rgba(200,205,222,${op.toFixed(3)})`
+          sphereCtx.beginPath()
+          sphereCtx.moveTo(a.x, a.y)
+          sphereCtx.lineTo(b.x, b.y)
+          sphereCtx.stroke()
+        }
+      }
 
-        // Slight expansion as particle dissolves
-        const rad = p.size * (1 + (1 - lifeT) * 0.5)
+      // Pass 3 — specular highlight on front hemisphere only
+      sphereCtx.lineWidth = 0.5
+      for (const c of SPHERE_CIRCLES) {
+        const projected = c.pts.map(proj)
+        for (let i = 0; i < projected.length; i++) {
+          const a = projected[i]
+          const b = projected[(i + 1) % projected.length]
+          const zMid = (a.z + b.z) * 0.5
+          if (zMid < 0.45) continue
+          const specular = (zMid - 0.45) / 0.55
+          const op = specular * specular * 0.25 * sheen
+          sphereCtx.strokeStyle = `rgba(245,248,255,${op.toFixed(3)})`
+          sphereCtx.beginPath()
+          sphereCtx.moveTo(a.x, a.y)
+          sphereCtx.lineTo(b.x, b.y)
+          sphereCtx.stroke()
+        }
+      }
 
-        const grad = flowCtx.createRadialGradient(p.x, p.y, 0, p.x, p.y, rad)
-        grad.addColorStop(0,    `rgba(${p.r},${p.g},${p.b},${a.toFixed(3)})`)
-        grad.addColorStop(0.40, `rgba(${p.r},${p.g},${p.b},${(a * 0.38).toFixed(3)})`)
-        grad.addColorStop(1,    `rgba(${p.r},${p.g},${p.b},0)`)
-        flowCtx.fillStyle = grad
-        flowCtx.beginPath()
-        flowCtx.arc(p.x, p.y, rad, 0, Math.PI * 2)
-        flowCtx.fill()
+      // Horizon ring — chrome edge with soft glow
+      sphereCtx.beginPath()
+      sphereCtx.arc(cx, cy, R, 0, Math.PI * 2)
+      sphereCtx.lineWidth = 2.5
+      sphereCtx.strokeStyle = `rgba(140,148,168,${(0.12 * sheen).toFixed(3)})`
+      sphereCtx.stroke()
+
+      sphereCtx.beginPath()
+      sphereCtx.arc(cx, cy, R, 0, Math.PI * 2)
+      sphereCtx.lineWidth = 0.7
+      sphereCtx.strokeStyle = `rgba(220,226,242,${(0.42 * sheen).toFixed(3)})`
+      sphereCtx.stroke()
+    }
+
+    // ---- ribbon trail ----
+    function drawTrailRibbon(now: number) {
+      // Expire old points
+      const cutoff = now - TRAIL_LIFE_MS
+      while (trail.length > 0 && trail[0].t < cutoff) trail.shift()
+
+      // Always clear — redraw entire trail fresh each frame so age-fade is precise
+      flowCtx.clearRect(0, 0, W, H)
+      if (trail.length < 2) return
+
+      flowCtx.lineCap = 'round'
+      flowCtx.lineJoin = 'round'
+
+      for (const pass of RIBBON_PASSES) {
+        for (let i = 1; i < trail.length; i++) {
+          const p0 = trail[i - 1]
+          const p1 = trail[i]
+
+          // Age: 1 = just spawned, 0 = about to expire. Use quadratic ease-out for natural fade.
+          const age0 = Math.max(0, 1 - (now - p0.t) / TRAIL_LIFE_MS)
+          const age1 = Math.max(0, 1 - (now - p1.t) / TRAIL_LIFE_MS)
+          const a0 = age0 * age0 * pass.alphaMult
+          const a1 = age1 * age1 * pass.alphaMult
+          if (a0 + a1 < 0.005) continue
+
+          let c0 = getColorForU(p0.u)
+          let c1 = getColorForU(p1.u)
+
+          // Whiten the hot core toward luminous white
+          if (pass.whiten > 0) {
+            const w = pass.whiten
+            c0 = { r: Math.round(c0.r + (255 - c0.r) * w), g: Math.round(c0.g + (255 - c0.g) * w), b: Math.round(c0.b + (255 - c0.b) * w) }
+            c1 = { r: Math.round(c1.r + (255 - c1.r) * w), g: Math.round(c1.g + (255 - c1.g) * w), b: Math.round(c1.b + (255 - c1.b) * w) }
+          }
+
+          // Width tapers with age — fat at cursor tip, whisper-thin at tail
+          const lineWidth = ((age0 + age1) / 2) * pass.widthPx + 0.5
+
+          const dx = p1.x - p0.x, dy = p1.y - p0.y
+          const dist = Math.hypot(dx, dy)
+
+          // For segments shorter than ~2px, use solid midpoint color (skips gradient creation)
+          if (dist < 2 || Math.abs(p0.u - p1.u) < 0.005) {
+            const mc = getColorForU((p0.u + p1.u) / 2)
+            const ma = (a0 + a1) / 2
+            flowCtx.strokeStyle = `rgba(${mc.r},${mc.g},${mc.b},${ma.toFixed(3)})`
+          } else {
+            const grad = flowCtx.createLinearGradient(p0.x, p0.y, p1.x, p1.y)
+            grad.addColorStop(0, `rgba(${c0.r},${c0.g},${c0.b},${a0.toFixed(3)})`)
+            grad.addColorStop(1, `rgba(${c1.r},${c1.g},${c1.b},${a1.toFixed(3)})`)
+            flowCtx.strokeStyle = grad
+          }
+
+          flowCtx.lineWidth = lineWidth
+          flowCtx.beginPath()
+          flowCtx.moveTo(p0.x, p0.y)
+          flowCtx.lineTo(p1.x, p1.y)
+          flowCtx.stroke()
+        }
       }
     }
 
@@ -404,13 +385,11 @@ export default function HeroCanvas() {
     let last = performance.now()
     let rafId = 0
     function frame(now: number) {
-      const dt = Math.min(50, now - last)
       last = now
       drawRings(now)
       drawSphere(now)
       animateLogo(now)
-      spawnTrailParticles(dt)
-      updateParticles(dt)
+      drawTrailRibbon(now)
       rafId = requestAnimationFrame(frame)
     }
     rafId = requestAnimationFrame(frame)
@@ -424,17 +403,27 @@ export default function HeroCanvas() {
     }
   }, [])
 
+  const silverGradient = 'linear-gradient(172deg, #ececf0 0%, #9a9aaa 38%, #d4d4e0 62%, #f2f2f6 100%)'
+
   return (
     <main style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden' }}>
-      <canvas ref={ringsRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 }} />
+      <canvas ref={ringsRef}  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 }} />
       <canvas ref={sphereRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 2 }} />
+
+      {/*
+        flow canvas at z-index 3, logo at z-index 4.
+        The ribbon glow sits BELOW the silver letters — light appears to
+        radiate from behind the letterforms, not float on top of them.
+      */}
+      <canvas ref={flowRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 3 }} />
+
       <div
         style={{
           position: 'absolute',
           left: '50%',
           top: '50%',
           transform: 'translate(-50%,-50%)',
-          zIndex: 3,
+          zIndex: 4,
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
@@ -447,7 +436,10 @@ export default function HeroCanvas() {
             fontWeight: 400,
             fontSize: 'clamp(72px, 12vw, 188px)',
             letterSpacing: '0.04em',
-            color: 'var(--ink)',
+            background: silverGradient,
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
             whiteSpace: 'nowrap',
             userSelect: 'none',
             willChange: 'transform',
@@ -459,8 +451,6 @@ export default function HeroCanvas() {
           NanoSphere
         </div>
       </div>
-      {/* normal blend preserves vivid electric blue/red on the yellow background */}
-      <canvas ref={flowRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 4 }} />
     </main>
   )
 }

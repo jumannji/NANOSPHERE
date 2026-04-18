@@ -21,15 +21,7 @@
       "static/chunks/23-999a7e1b7b5d1408.js",
       "static/chunks/main-app-2367577634c435bf.js",
       "static/chunks/138-228a7527def78c58.js",
-      "static/chunks/app/page-b2addf13689b963b.js"
-    ],
-    "/articles/page": [
-      "static/chunks/webpack-73f62c8e45950dfb.js",
-      "static/chunks/fd9d1056-d9fde7a16c7f2592.js",
-      "static/chunks/23-999a7e1b7b5d1408.js",
-      "static/chunks/main-app-2367577634c435bf.js",
-      "static/chunks/138-228a7527def78c58.js",
-      "static/chunks/app/articles/page-c75e3e96c845a8f3.js"
+      "static/chunks/app/page-f3c4b1fcd4a5fc0b.js"
     ],
     "/nanopill/page": [
       "static/chunks/webpack-73f62c8e45950dfb.js",
@@ -37,15 +29,15 @@
       "static/chunks/23-999a7e1b7b5d1408.js",
       "static/chunks/main-app-2367577634c435bf.js",
       "static/chunks/138-228a7527def78c58.js",
-      "static/chunks/app/nanopill/page-e2a96a7817263ad9.js"
+      "static/chunks/app/nanopill/page-180e46ba46c7163c.js"
     ],
-    "/merch/page": [
+    "/articles/page": [
       "static/chunks/webpack-73f62c8e45950dfb.js",
       "static/chunks/fd9d1056-d9fde7a16c7f2592.js",
       "static/chunks/23-999a7e1b7b5d1408.js",
       "static/chunks/main-app-2367577634c435bf.js",
       "static/chunks/138-228a7527def78c58.js",
-      "static/chunks/app/merch/page-7aeae3da038f69db.js"
+      "static/chunks/app/articles/page-b06a3b2b9f276d5b.js"
     ],
     "/about/page": [
       "static/chunks/webpack-73f62c8e45950dfb.js",
@@ -53,7 +45,15 @@
       "static/chunks/23-999a7e1b7b5d1408.js",
       "static/chunks/main-app-2367577634c435bf.js",
       "static/chunks/138-228a7527def78c58.js",
-      "static/chunks/app/about/page-58c9efd628fce1eb.js"
+      "static/chunks/app/about/page-c3a31a9623277001.js"
+    ],
+    "/merch/page": [
+      "static/chunks/webpack-73f62c8e45950dfb.js",
+      "static/chunks/fd9d1056-d9fde7a16c7f2592.js",
+      "static/chunks/23-999a7e1b7b5d1408.js",
+      "static/chunks/main-app-2367577634c435bf.js",
+      "static/chunks/138-228a7527def78c58.js",
+      "static/chunks/app/merch/page-89546cbdfca97797.js"
     ]
   }
 }
