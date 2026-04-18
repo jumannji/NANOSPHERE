@@ -412,7 +412,7 @@ export default function HeroCanvas() {
             fontWeight: 400,
             fontSize: 'clamp(72px, 12vw, 188px)',
             letterSpacing: '0.04em',
-            color: 'var(--ink)',
+            color: '#ae3319',
             whiteSpace: 'nowrap',
             userSelect: 'none',
             willChange: 'transform',
