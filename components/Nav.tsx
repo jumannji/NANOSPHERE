@@ -1,13 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import NavSphere from './NavSphere'
 
-interface NavProps {
-  showSphere?: boolean
-}
-
-export default function Nav({ showSphere = false }: NavProps) {
+export default function Nav() {
   return (
     <nav>
       <div className="nav-links">
@@ -15,7 +10,6 @@ export default function Nav({ showSphere = false }: NavProps) {
         <Link href="/nanopill" className="pill">
           <span className="pill-label">Nanopill</span>
         </Link>
-        {showSphere && <NavSphere />}
         <Link href="/merch">Merch</Link>
         <Link href="/about">About</Link>
       </div>

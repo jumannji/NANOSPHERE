@@ -3,6 +3,6 @@
   "/page": "app/page.js",
   "/nanopill/page": "app/nanopill/page.js",
   "/articles/page": "app/articles/page.js",
-  "/merch/page": "app/merch/page.js",
-  "/about/page": "app/about/page.js"
+  "/about/page": "app/about/page.js",
+  "/merch/page": "app/merch/page.js"
 }

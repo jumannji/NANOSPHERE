@@ -9,7 +9,7 @@ interface Props {
 export default function InnerPageShell({ title, children }: Props) {
   return (
     <>
-      <Nav showSphere />
+      <Nav />
       <CornerBrackets />
       <div className="vignette" />
       <div className="tagline">Cultural&nbsp;&nbsp;Transmission</div>

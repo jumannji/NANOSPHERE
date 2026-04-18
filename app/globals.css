@@ -97,9 +97,7 @@ nav {
 .nav-links a.pill:hover .pill-label { color: #fafafa; }
 
 .nav-sphere {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
   line-height: 0;
   opacity: 0.72;
   transition: opacity 350ms ease, transform 350ms ease;
