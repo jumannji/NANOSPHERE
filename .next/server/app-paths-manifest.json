@@ -1,9 +1,0 @@
-{
-  "/_not-found/page": "app/_not-found/page.js",
-  "/merch/page": "app/merch/page.js",
-  "/nanopill/page": "app/nanopill/page.js",
-  "/products/page": "app/products/page.js",
-  "/page": "app/page.js",
-  "/articles/page": "app/articles/page.js",
-  "/about/page": "app/about/page.js"
-}
