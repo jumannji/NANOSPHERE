@@ -4,17 +4,38 @@ import { useEffect, useRef } from 'react'
 
 const WORD = 'NanoSphere'
 const BLUE_PALETTE = [
-  { r:   8, g:  18, b:  54 },
   { r:  14, g:  34, b:  92 },
   { r:  22, g:  58, b: 148 },
   { r:  30, g:  82, b: 190 },
   { r:  52, g: 116, b: 230 },
-  { r:  92, g: 172, b: 255 },
   { r:  20, g:  76, b: 128 },
-  { r:   6, g:  10, b:  30 },
   { r:  74, g: 140, b: 222 },
   { r:  38, g:  98, b: 204 },
 ]
+const RED_PALETTE = [
+  { r:  92, g:  14, b:  22 },
+  { r: 148, g:  22, b:  34 },
+  { r: 190, g:  30, b:  46 },
+  { r: 222, g:  58, b:  68 },
+  { r: 128, g:  20, b:  28 },
+  { r: 230, g:  86, b:  92 },
+  { r: 204, g:  42, b:  54 },
+]
+
+function pickBlendedColor(u: number) {
+  const blue = BLUE_PALETTE[(Math.random() * BLUE_PALETTE.length) | 0]
+  const red  = RED_PALETTE [(Math.random() * RED_PALETTE.length ) | 0]
+  let t: number
+  if (u <= 0.38) t = 0
+  else if (u >= 0.62) t = 1
+  else t = (u - 0.38) / 0.24
+  t = t * t * (3 - 2 * t)
+  return {
+    r: Math.round(blue.r + (red.r - blue.r) * t),
+    g: Math.round(blue.g + (red.g - blue.g) * t),
+    b: Math.round(blue.b + (red.b - blue.b) * t),
+  }
+}
 
 const SPHERE_CIRCLES = (() => {
   const arr: { kind: string; pts: number[][] }[] = []
@@ -253,35 +274,36 @@ export default function HeroCanvas() {
 
     // ---- particles ----
     const particles: Particle[] = []
-    const MAX_PARTICLES = 1400
+    const MAX_PARTICLES = 1600
 
     function fadeFlowCanvas() {
       flowCtx.globalCompositeOperation = 'destination-out'
-      flowCtx.fillStyle = 'rgba(0,0,0,0.05)'
+      flowCtx.fillStyle = 'rgba(0,0,0,0.03)'
       flowCtx.fillRect(0, 0, W, H)
       flowCtx.globalCompositeOperation = 'source-over'
     }
 
     function spawnFromZone(zi: number, count: number) {
       const pts = zonePoints[zi]
-      if (!pts || !pts.length) return
-      const col = BLUE_PALETTE[zi % BLUE_PALETTE.length]
+      if (!pts || !pts.length || !logoBox) return
       for (let i = 0; i < count; i++) {
         if (particles.length >= MAX_PARTICLES) break
         const p = pts[(Math.random() * pts.length) | 0]
+        const u = Math.max(0, Math.min(1, (p.x - logoBox.left) / logoBox.width))
+        const col = pickBlendedColor(u)
         const ang = Math.random() * Math.PI * 2
-        const speed = 0.18 + Math.random() * 0.45
-        const life = 2800 + Math.random() * 2600
+        const speed = 0.04 + Math.random() * 0.12
+        const life = 3800 + Math.random() * 3400
         particles.push({
           x: p.x, y: p.y,
           vx: Math.cos(ang) * speed,
           vy: Math.sin(ang) * speed,
           life, maxLife: life,
-          size: 1.6 + Math.random() * 2.6,
+          size: 0.45 + Math.random() * 0.95,
           r: col.r, g: col.g, b: col.b,
-          alpha0: 0.28 + Math.random() * 0.28,
+          alpha0: 0.14 + Math.random() * 0.18,
           wob: Math.random() * Math.PI * 2,
-          wobSpeed: 0.0008 + Math.random() * 0.0012,
+          wobSpeed: 0.0004 + Math.random() * 0.0008,
         })
       }
     }
@@ -297,32 +319,33 @@ export default function HeroCanvas() {
           const tdx = mouse.x - p.x
           const tdy = mouse.y - p.y
           const td = Math.hypot(tdx, tdy) || 1
-          const pull = 0.015 + Math.min(0.04, td * 0.00008)
+          const pull = 0.004 + Math.min(0.014, td * 0.00003)
           p.vx += (tdx / td) * pull
           p.vy += (tdy / td) * pull
         }
         p.wob += p.wobSpeed * dt
-        const w = 0.02
+        const w = 0.010
         p.vx += Math.cos(p.wob + Math.PI / 2) * w
         p.vy += Math.sin(p.wob + Math.PI / 2) * w
-        p.vx *= 0.985
-        p.vy *= 0.985
+        p.vy -= 0.006
+        p.vx *= 0.972
+        p.vy *= 0.972
         const sp = Math.hypot(p.vx, p.vy)
-        const maxSp = 1.6
+        const maxSp = 0.9
         if (sp > maxSp) { p.vx *= maxSp / sp; p.vy *= maxSp / sp }
         p.x += p.vx * dt * 0.05
         p.y += p.vy * dt * 0.05
         const lifeT = p.life / p.maxLife
-        const fadeIn = Math.min(1, (1 - lifeT) * 5)
+        const fadeIn = Math.min(1, (1 - lifeT) * 3.5)
         const a = p.alpha0 * lifeT * fadeIn
-        const rad = p.size * (1.2 + (1 - lifeT) * 1.4)
-        const grad = flowCtx.createRadialGradient(p.x, p.y, 0, p.x, p.y, rad * 2.6)
+        const rad = p.size * (1.0 + (1 - lifeT) * 0.6)
+        const grad = flowCtx.createRadialGradient(p.x, p.y, 0, p.x, p.y, rad * 1.9)
         grad.addColorStop(0,   `rgba(${p.r},${p.g},${p.b},${a.toFixed(3)})`)
-        grad.addColorStop(0.5, `rgba(${p.r},${p.g},${p.b},${(a * 0.35).toFixed(3)})`)
+        grad.addColorStop(0.55, `rgba(${p.r},${p.g},${p.b},${(a * 0.28).toFixed(3)})`)
         grad.addColorStop(1,   `rgba(${p.r},${p.g},${p.b},0)`)
         flowCtx.fillStyle = grad
         flowCtx.beginPath()
-        flowCtx.arc(p.x, p.y, rad * 2.6, 0, Math.PI * 2)
+        flowCtx.arc(p.x, p.y, rad * 1.9, 0, Math.PI * 2)
         flowCtx.fill()
       }
     }
@@ -331,11 +354,11 @@ export default function HeroCanvas() {
       if (!cursorOnInk()) return
       const u = Math.max(0, Math.min(0.9999, (mouse.x - logoBox!.left) / logoBox!.width))
       const zi = Math.floor(u * WORD.length)
-      const baseRate = 14
+      const baseRate = 16
       const spawn = Math.max(1, Math.floor(baseRate * (dt / 16.7)))
       spawnFromZone(zi, spawn)
-      if (zi > 0)               spawnFromZone(zi - 1, Math.ceil(spawn * 0.35))
-      if (zi < WORD.length - 1) spawnFromZone(zi + 1, Math.ceil(spawn * 0.35))
+      if (zi > 0)               spawnFromZone(zi - 1, Math.ceil(spawn * 0.4))
+      if (zi < WORD.length - 1) spawnFromZone(zi + 1, Math.ceil(spawn * 0.4))
     }
 
     let last = performance.now()
