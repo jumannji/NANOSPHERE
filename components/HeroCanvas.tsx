@@ -274,11 +274,12 @@ export default function HeroCanvas() {
 
     // ---- particles ----
     const particles: Particle[] = []
-    const MAX_PARTICLES = 1600
+    const MAX_PARTICLES = 2400
 
     function fadeFlowCanvas() {
       flowCtx.globalCompositeOperation = 'destination-out'
-      flowCtx.fillStyle = 'rgba(0,0,0,0.03)'
+      // Faster fade = shorter trails, more smoke-like
+      flowCtx.fillStyle = 'rgba(0,0,0,0.11)'
       flowCtx.fillRect(0, 0, W, H)
       flowCtx.globalCompositeOperation = 'source-over'
     }
@@ -291,19 +292,21 @@ export default function HeroCanvas() {
         const p = pts[(Math.random() * pts.length) | 0]
         const u = Math.max(0, Math.min(1, (p.x - logoBox.left) / logoBox.width))
         const col = pickBlendedColor(u)
-        const ang = Math.random() * Math.PI * 2
-        const speed = 0.04 + Math.random() * 0.12
-        const life = 3800 + Math.random() * 3400
+        // Mostly upward with lateral spread — aurora/smoke drift
+        const lateralSpread = (Math.random() - 0.5) * 1.2
+        const upSpeed = 0.4 + Math.random() * 0.9
+        const life = 900 + Math.random() * 700
         particles.push({
           x: p.x, y: p.y,
-          vx: Math.cos(ang) * speed,
-          vy: Math.sin(ang) * speed,
+          vx: lateralSpread,
+          vy: -upSpeed,
           life, maxLife: life,
-          size: 0.45 + Math.random() * 0.95,
+          // Large soft blobs — many overlapping = aurora glow
+          size: 10 + Math.random() * 18,
           r: col.r, g: col.g, b: col.b,
-          alpha0: 0.14 + Math.random() * 0.18,
+          alpha0: 0.055 + Math.random() * 0.065,
           wob: Math.random() * Math.PI * 2,
-          wobSpeed: 0.0004 + Math.random() * 0.0008,
+          wobSpeed: 0.0012 + Math.random() * 0.0016,
         })
       }
     }
@@ -315,37 +318,38 @@ export default function HeroCanvas() {
         const p = particles[i]
         p.life -= dt
         if (p.life <= 0) { particles.splice(i, 1); continue }
-        if (mouse.inside) {
-          const tdx = mouse.x - p.x
-          const tdy = mouse.y - p.y
-          const td = Math.hypot(tdx, tdy) || 1
-          const pull = 0.004 + Math.min(0.014, td * 0.00003)
-          p.vx += (tdx / td) * pull
-          p.vy += (tdy / td) * pull
-        }
+
+        // Gentle lateral wobble for organic flow
         p.wob += p.wobSpeed * dt
-        const w = 0.010
-        p.vx += Math.cos(p.wob + Math.PI / 2) * w
-        p.vy += Math.sin(p.wob + Math.PI / 2) * w
-        p.vy -= 0.006
-        p.vx *= 0.972
-        p.vy *= 0.972
+        p.vx += Math.cos(p.wob) * 0.018
+        // Sustained upward buoyancy
+        p.vy -= 0.022
+
+        // Light drag — let them float freely
+        p.vx *= 0.96
+        p.vy *= 0.97
+
         const sp = Math.hypot(p.vx, p.vy)
-        const maxSp = 0.9
+        const maxSp = 2.8
         if (sp > maxSp) { p.vx *= maxSp / sp; p.vy *= maxSp / sp }
-        p.x += p.vx * dt * 0.05
-        p.y += p.vy * dt * 0.05
+
+        p.x += p.vx * dt * 0.06
+        p.y += p.vy * dt * 0.06
+
         const lifeT = p.life / p.maxLife
-        const fadeIn = Math.min(1, (1 - lifeT) * 3.5)
+        // Quick fade-in, long fade-out for smoke puff feel
+        const fadeIn = Math.min(1, (1 - lifeT) * 6)
         const a = p.alpha0 * lifeT * fadeIn
-        const rad = p.size * (1.0 + (1 - lifeT) * 0.6)
-        const grad = flowCtx.createRadialGradient(p.x, p.y, 0, p.x, p.y, rad * 1.9)
-        grad.addColorStop(0,   `rgba(${p.r},${p.g},${p.b},${a.toFixed(3)})`)
-        grad.addColorStop(0.55, `rgba(${p.r},${p.g},${p.b},${(a * 0.28).toFixed(3)})`)
-        grad.addColorStop(1,   `rgba(${p.r},${p.g},${p.b},0)`)
+        // Grow slightly as they rise (smoke expansion)
+        const rad = p.size * (1 + (1 - lifeT) * 1.2)
+
+        const grad = flowCtx.createRadialGradient(p.x, p.y, 0, p.x, p.y, rad)
+        grad.addColorStop(0,    `rgba(${p.r},${p.g},${p.b},${a.toFixed(3)})`)
+        grad.addColorStop(0.45, `rgba(${p.r},${p.g},${p.b},${(a * 0.4).toFixed(3)})`)
+        grad.addColorStop(1,    `rgba(${p.r},${p.g},${p.b},0)`)
         flowCtx.fillStyle = grad
         flowCtx.beginPath()
-        flowCtx.arc(p.x, p.y, rad * 1.9, 0, Math.PI * 2)
+        flowCtx.arc(p.x, p.y, rad, 0, Math.PI * 2)
         flowCtx.fill()
       }
     }
@@ -354,11 +358,12 @@ export default function HeroCanvas() {
       if (!cursorOnInk()) return
       const u = Math.max(0, Math.min(0.9999, (mouse.x - logoBox!.left) / logoBox!.width))
       const zi = Math.floor(u * WORD.length)
-      const baseRate = 16
-      const spawn = Math.max(1, Math.floor(baseRate * (dt / 16.7)))
+      // Higher burst rate for dense smoke/aurora response
+      const baseRate = 28
+      const spawn = Math.max(2, Math.floor(baseRate * (dt / 16.7)))
       spawnFromZone(zi, spawn)
-      if (zi > 0)               spawnFromZone(zi - 1, Math.ceil(spawn * 0.4))
-      if (zi < WORD.length - 1) spawnFromZone(zi + 1, Math.ceil(spawn * 0.4))
+      if (zi > 0)               spawnFromZone(zi - 1, Math.ceil(spawn * 0.5))
+      if (zi < WORD.length - 1) spawnFromZone(zi + 1, Math.ceil(spawn * 0.5))
     }
 
     let last = performance.now()

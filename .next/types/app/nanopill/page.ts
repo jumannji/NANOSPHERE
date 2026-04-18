@@ -1,4 +1,4 @@
-// File: /home/user/NANOSPHERE/app/nanopill/page.tsx
+// File: /Users/nikolozgogava/Downloads/NanoSphere/app/nanopill/page.tsx
 import * as entry from '../../../../app/nanopill/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

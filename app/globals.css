@@ -96,17 +96,13 @@ nav {
 }
 .nav-links a.pill:hover .pill-label { color: #fafafa; }
 
-.nav-links .nav-sphere {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border: none;
+.nav-sphere {
+  display: block;
   line-height: 0;
-  opacity: 0.85;
+  opacity: 0.72;
   transition: opacity 350ms ease, transform 350ms ease;
 }
-.nav-links .nav-sphere:hover {
+.nav-sphere:hover {
   opacity: 1;
   transform: scale(1.06);
 }
