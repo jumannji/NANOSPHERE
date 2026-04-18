@@ -1,1 +1,1 @@
-self.__NEXT_FONT_MANIFEST='{"pages":{},"app":{"/Users/nikolozgogava/Downloads/NanoSphere/app/layout":["static/media/a273567b21a7c318-s.p.woff2","static/media/acaa31bcd8de99a2-s.p.woff2"]},"appUsingSizeAdjust":true,"pagesUsingSizeAdjust":false}';
+self.__NEXT_FONT_MANIFEST='{"pages":{},"app":{"/home/user/NANOSPHERE/app/layout":["static/media/a273567b21a7c318-s.p.woff2","static/media/acaa31bcd8de99a2-s.p.woff2"]},"appUsingSizeAdjust":true,"pagesUsingSizeAdjust":false}';
