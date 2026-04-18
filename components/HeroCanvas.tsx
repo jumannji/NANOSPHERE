@@ -4,40 +4,33 @@ import { useEffect, useRef } from 'react'
 
 const WORD = 'NanoSphere'
 
-// Deterministic blue→red gradient along the logo width (no randomness — ribbon needs consistent color)
+// Blue (#3478ff) → Red (#d41c30) across logo width — deterministic, vivid
 function getColorForU(u: number) {
   let t: number
   if (u <= 0.38) t = 0
   else if (u >= 0.62) t = 1
   else t = (u - 0.38) / 0.24
   t = t * t * (3 - 2 * t) // smoothstep
-  // Blue: #4488ff (68,136,255) → Red: #dc2840 (220,40,64)
   return {
-    r: Math.round(68  + (220 - 68)  * t),
-    g: Math.round(136 + (40  - 136) * t),
-    b: Math.round(255 + (64  - 255) * t),
+    r: Math.round(52  + (212 - 52)  * t),
+    g: Math.round(120 + (28  - 120) * t),
+    b: Math.round(255 + (48  - 255) * t),
   }
 }
 
 const SPHERE_CIRCLES = (() => {
   const arr: { kind: string; pts: number[][] }[] = []
   const segs = 96
-  const numLong = 9
-  for (let i = 0; i < numLong; i++) {
-    const theta = (i / numLong) * Math.PI
+  for (let i = 0; i < 9; i++) {
+    const theta = (i / 9) * Math.PI
     const pts: number[][] = []
     for (let s = 0; s < segs; s++) {
       const u = (s / segs) * Math.PI * 2
-      pts.push([
-        Math.cos(u) * Math.cos(theta),
-        Math.sin(u),
-        Math.cos(u) * Math.sin(theta),
-      ])
+      pts.push([Math.cos(u) * Math.cos(theta), Math.sin(u), Math.cos(u) * Math.sin(theta)])
     }
     arr.push({ kind: 'long', pts })
   }
-  const lats = [-0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75]
-  for (const ly of lats) {
+  for (const ly of [-0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75]) {
     const r = Math.sqrt(1 - ly * ly)
     const pts: number[][] = []
     for (let s = 0; s < segs; s++) {
@@ -57,21 +50,40 @@ const RINGS_DEF = [
   { phase: 5.4, speed: 0.00045, rScale: 0.26 },
 ]
 
-interface TrailPoint {
-  x: number
-  y: number
-  t: number   // timestamp ms
-  u: number   // 0–1 horizontal position in logo (drives color)
+interface Particle {
+  x: number; y: number
+  vx: number; vy: number
+  life: number; maxLife: number
+  size: number
+  r: number; g: number; b: number
+  alpha0: number
+  seed: number
 }
 
-// Ribbon passes: outer bloom → inner glow → bright core
-const RIBBON_PASSES = [
-  { widthPx: 42, alphaMult: 0.055, whiten: 0.0 },
-  { widthPx: 18, alphaMult: 0.18,  whiten: 0.0 },
-  { widthPx:  6, alphaMult: 0.55,  whiten: 0.0 },
-  { widthPx:  1.5, alphaMult: 0.92, whiten: 0.55 }, // hot core
-]
-const TRAIL_LIFE_MS = 1600
+// SVG filter string for brushed-metal logo.
+// feTurbulence: low X-freq (0.001) + higher Y-freq (0.12) = long horizontal grain streaks.
+// feSpecularLighting: azimuth 0° (light from left) at 70° elevation → angled sheen on grain.
+// feBlend screen: layered on silver base → classic brushed chrome look.
+const METAL_FILTER_SVG = `<defs>
+  <filter id="brushed-metal" x="-8%" y="-18%" width="116%" height="136%" color-interpolation-filters="sRGB">
+    <feTurbulence type="fractalNoise" baseFrequency="0.001 0.12" numOctaves="4" seed="3" stitchTiles="stitch" result="grain"/>
+    <feSpecularLighting in="grain" surfaceScale="7" specularConstant="2.4" specularExponent="42" lighting-color="white" result="spec">
+      <feDistantLight azimuth="0" elevation="70"/>
+    </feSpecularLighting>
+    <feComposite in="spec" in2="SourceAlpha" operator="in" result="clipped-spec"/>
+    <feFlood flood-color="rgb(152,157,178)" result="silver"/>
+    <feComposite in="silver" in2="SourceAlpha" operator="in" result="silver-text"/>
+    <feBlend in="silver-text" in2="clipped-spec" mode="screen" result="metal"/>
+    <feGaussianBlur in="SourceAlpha" stdDeviation="2.5" result="blur"/>
+    <feOffset in="blur" dx="0" dy="4" result="shadow-offset"/>
+    <feFlood flood-color="rgba(0,0,10,0.92)" result="shadow-color"/>
+    <feComposite in="shadow-color" in2="shadow-offset" operator="in" result="shadow"/>
+    <feMerge>
+      <feMergeNode in="shadow"/>
+      <feMergeNode in="metal"/>
+    </feMerge>
+  </filter>
+</defs>`
 
 export default function HeroCanvas() {
   const ringsRef  = useRef<HTMLCanvasElement>(null)
@@ -94,8 +106,7 @@ export default function HeroCanvas() {
 
     function resize() {
       DPR = Math.min(window.devicePixelRatio || 1, 2)
-      W = window.innerWidth
-      H = window.innerHeight
+      W = window.innerWidth; H = window.innerHeight
       for (const c of [ringsCanvas, sphereCanvas, flowCanvas]) {
         c.width  = Math.floor(W * DPR)
         c.height = Math.floor(H * DPR)
@@ -110,8 +121,92 @@ export default function HeroCanvas() {
     window.addEventListener('resize', resize)
 
     const mouse = { x: -9999, y: -9999, inside: false }
+    const onMouseMove = (e: MouseEvent) => { mouse.x = e.clientX; mouse.y = e.clientY; mouse.inside = true }
+    const onMouseLeave = () => { mouse.inside = false }
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseleave', onMouseLeave)
 
-    // ---- ink mask (for cursor-on-letter detection) ----
+    // ---- logo float ----
+    function animateLogo(t: number) {
+      const tx = Math.cos(t * 0.00025) * 5
+      const ty = Math.sin(t * 0.00020) * 5 * 0.7
+      const rot = Math.sin(t * 0.00018) * 1.0
+      logo.style.transform = `translate(${tx.toFixed(2)}px,${ty.toFixed(2)}px) rotate(${rot.toFixed(3)}deg)`
+    }
+
+    // ---- orbit rings ----
+    function drawRings(t: number) {
+      ringsCtx.clearRect(0, 0, W, H)
+      const cx = W / 2, cy = H / 2
+      const baseR = Math.min(W, H) * 0.48
+      ringsCtx.lineWidth = 0.5
+      for (const ring of RINGS_DEF) {
+        const pulse = Math.sin(t * ring.speed + ring.phase) * 0.5 + 0.5
+        const r = baseR * ring.rScale * (0.96 + pulse * 0.08)
+        ringsCtx.strokeStyle = `rgba(20,20,18,${(0.04 + pulse * 0.04).toFixed(3)})`
+        ringsCtx.beginPath()
+        ringsCtx.arc(cx, cy, r, 0, Math.PI * 2)
+        ringsCtx.stroke()
+      }
+    }
+
+    // ---- cyberpunk wireframe sphere (electric cyan/blue) ----
+    function drawSphere(t: number) {
+      sphereCtx.clearRect(0, 0, W, H)
+      const cx = W / 2, cy = H / 2
+      const R = Math.min(W, H) * 0.38
+      const ay = t * 0.00012
+      const ax = Math.sin(t * 0.00007) * 0.28
+      const cy_ = Math.cos(ay), sy_ = Math.sin(ay)
+      const cx_ = Math.cos(ax), sx_ = Math.sin(ax)
+
+      function proj(p: number[]) {
+        let x = p[0] * cy_ + p[2] * sy_
+        let z = -p[0] * sy_ + p[2] * cy_
+        let y = p[1] * cx_ - z * sx_
+        z = p[1] * sx_ + z * cx_
+        return { x: cx + x * R, y: cy + y * R, z }
+      }
+
+      // Two overlapping sines → subtle CRT-like flicker/sheen
+      const flicker = 0.82 + Math.sin(t * 0.053) * 0.10 + Math.sin(t * 0.029) * 0.08
+
+      // Pass 1 — wide electric-cyan glow
+      sphereCtx.lineWidth = 3.5
+      for (const c of SPHERE_CIRCLES) {
+        const projected = c.pts.map(proj)
+        for (let i = 0; i < projected.length; i++) {
+          const a = projected[i], b = projected[(i + 1) % projected.length]
+          const depth = ((a.z + b.z) * 0.5 + 1) * 0.5
+          sphereCtx.strokeStyle = `rgba(0,190,255,${((0.012 + depth * 0.055) * flicker).toFixed(3)})`
+          sphereCtx.beginPath(); sphereCtx.moveTo(a.x, a.y); sphereCtx.lineTo(b.x, b.y); sphereCtx.stroke()
+        }
+      }
+
+      // Pass 2 — crisp bright-cyan lines, depth-modulated
+      sphereCtx.lineWidth = 0.5
+      for (const c of SPHERE_CIRCLES) {
+        const projected = c.pts.map(proj)
+        for (let i = 0; i < projected.length; i++) {
+          const a = projected[i], b = projected[(i + 1) % projected.length]
+          const depth = ((a.z + b.z) * 0.5 + 1) * 0.5
+          sphereCtx.strokeStyle = `rgba(80,215,255,${((0.06 + depth * 0.32) * flicker).toFixed(3)})`
+          sphereCtx.beginPath(); sphereCtx.moveTo(a.x, a.y); sphereCtx.lineTo(b.x, b.y); sphereCtx.stroke()
+        }
+      }
+
+      // Horizon ring — glow halo + crisp edge
+      sphereCtx.beginPath(); sphereCtx.arc(cx, cy, R, 0, Math.PI * 2)
+      sphereCtx.lineWidth = 3
+      sphereCtx.strokeStyle = `rgba(0,200,255,${(0.10 * flicker).toFixed(3)})`
+      sphereCtx.stroke()
+      sphereCtx.beginPath(); sphereCtx.arc(cx, cy, R, 0, Math.PI * 2)
+      sphereCtx.lineWidth = 0.8
+      sphereCtx.strokeStyle = `rgba(100,228,255,${(0.45 * flicker).toFixed(3)})`
+      sphereCtx.stroke()
+    }
+
+    // ---- ink mask ----
     let inkMask: { data: Uint8Array; w: number; h: number; mScale: number } | null = null
     let logoBox: DOMRect | null = null
 
@@ -131,11 +226,8 @@ export default function HeroCanvas() {
       const off = document.createElement('canvas')
       off.width = ow; off.height = oh
       const octx = off.getContext('2d')!
-      octx.fillStyle = '#000'
-      octx.fillRect(0, 0, ow, oh)
-      octx.fillStyle = '#fff'
-      octx.textBaseline = 'middle'
-      octx.textAlign = 'center'
+      octx.fillStyle = '#000'; octx.fillRect(0, 0, ow, oh)
+      octx.fillStyle = '#fff'; octx.textBaseline = 'middle'; octx.textAlign = 'center'
       octx.font = `${fontWeight} ${fontSize * scale}px ${fontFamily}`
       octx.fillText(WORD, ow / 2, oh / 2)
       const img = octx.getImageData(0, 0, ow, oh).data
@@ -143,21 +235,17 @@ export default function HeroCanvas() {
       const mw = Math.ceil(rect.width / mScale) + 2
       const mh = Math.ceil(rect.height / mScale) + 2
       const mask = new Uint8Array(mw * mh)
-      const xStart = padX * scale
-      const xEnd   = (padX + rect.width) * scale
-      const step = 3
-      for (let y = 0; y < oh; y += step) {
-        for (let x = xStart; x < xEnd; x += step) {
+      const xStart = padX * scale, xEnd = (padX + rect.width) * scale
+      for (let y = 0; y < oh; y += 3) {
+        for (let x = xStart; x < xEnd; x += 3) {
           if (img[(y * ow + x) * 4] > 160) {
             const sx = rect.left - padX + x / scale
             const sy = rect.top  - padY + y / scale
             const mx = Math.floor((sx - rect.left) / mScale)
             const my = Math.floor((sy - rect.top)  / mScale)
-            for (let dy = -1; dy <= 1; dy++) {
-              for (let dx = -1; dx <= 1; dx++) {
-                const xx = mx + dx, yy = my + dy
-                if (xx >= 0 && yy >= 0 && xx < mw && yy < mh) mask[yy * mw + xx] = 1
-              }
+            for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+              const xx = mx + dx, yy = my + dy
+              if (xx >= 0 && yy >= 0 && xx < mw && yy < mh) mask[yy * mw + xx] = 1
             }
           }
         }
@@ -172,224 +260,106 @@ export default function HeroCanvas() {
 
     function cursorOnInk() {
       if (!inkMask || !logoBox || !mouse.inside) return false
-      const lx = mouse.x - logoBox.left
-      const ly = mouse.y - logoBox.top
+      const lx = mouse.x - logoBox.left, ly = mouse.y - logoBox.top
       if (lx < 0 || ly < 0 || lx > logoBox.width || ly > logoBox.height) return false
-      const mx = Math.floor(lx / inkMask.mScale)
-      const my = Math.floor(ly / inkMask.mScale)
+      const mx = Math.floor(lx / inkMask.mScale), my = Math.floor(ly / inkMask.mScale)
       if (mx < 0 || my < 0 || mx >= inkMask.w || my >= inkMask.h) return false
       return inkMask.data[my * inkMask.w + mx] === 1
     }
 
-    // ---- trail ----
-    const trail: TrailPoint[] = []
+    // ---- smoky particle cloud ----
+    const particles: Particle[] = []
+    const MAX_PARTICLES = 1600
 
-    const onMouseMove = (e: MouseEvent) => {
-      mouse.x = e.clientX
-      mouse.y = e.clientY
-      mouse.inside = true
-
-      // Sample a trail point if cursor is on letter ink
-      if (cursorOnInk() && logoBox) {
-        const last = trail[trail.length - 1]
-        // Min 4px spacing so we don't oversample while still smooth
-        if (!last || Math.hypot(e.clientX - last.x, e.clientY - last.y) >= 4) {
-          const u = Math.max(0, Math.min(1, (e.clientX - logoBox.left) / logoBox.width))
-          trail.push({ x: e.clientX, y: e.clientY, t: performance.now(), u })
-          if (trail.length > 600) trail.shift() // hard cap
-        }
-      }
-    }
-    const onMouseLeave = () => { mouse.inside = false }
-    window.addEventListener('mousemove', onMouseMove)
-    window.addEventListener('mouseleave', onMouseLeave)
-
-    // ---- logo float ----
-    function animateLogo(t: number) {
-      const r = 5
-      const tx = Math.cos(t * 0.00025) * r
-      const ty = Math.sin(t * 0.00020) * r * 0.7
-      const rot = Math.sin(t * 0.00018) * 1.0
-      logo.style.transform = `translate(${tx.toFixed(2)}px,${ty.toFixed(2)}px) rotate(${rot.toFixed(3)}deg)`
+    // Approximate 2D turbulence field via overlapping sines — makes particles curl and drift
+    function smokeTurbulence(x: number, y: number, t: number, seed: number): [number, number] {
+      const T = t * 0.00055, S = seed
+      const lx = Math.sin(x * 0.020 + T       + S) * 0.45 + Math.cos(y * 0.024 - T * 0.80 + S * 1.3) * 0.45
+      const ly = Math.cos(x * 0.024 + T * 1.1 + S * 0.7) * 0.45 + Math.sin(y * 0.018 - T * 0.90 - S * 0.5) * 0.45
+      const hx = Math.sin(x * 0.055 + y * 0.040 + T * 2.2 + S * 2.0) * 0.18
+      const hy = Math.cos(x * 0.048 - y * 0.055 + T * 1.8 - S * 1.5) * 0.18
+      return [lx + hx, ly + hy]
     }
 
-    // ---- orbit rings ----
-    function drawRings(t: number) {
-      ringsCtx.clearRect(0, 0, W, H)
-      const cx = W / 2, cy = H / 2
-      const baseR = Math.min(W, H) * 0.48
-      ringsCtx.lineWidth = 0.5
-      for (const ring of RINGS_DEF) {
-        const pulse = Math.sin(t * ring.speed + ring.phase) * 0.5 + 0.5
-        const r = baseR * ring.rScale * (0.96 + pulse * 0.08)
-        const opacity = 0.04 + pulse * 0.04
-        ringsCtx.strokeStyle = `rgba(20,20,18,${opacity.toFixed(3)})`
-        ringsCtx.beginPath()
-        ringsCtx.arc(cx, cy, r, 0, Math.PI * 2)
-        ringsCtx.stroke()
-      }
+    function spawnSmoke() {
+      if (!cursorOnInk() || !logoBox || particles.length >= MAX_PARTICLES) return
+      const u = Math.max(0, Math.min(1, (mouse.x - logoBox.left) / logoBox.width))
+      const col = getColorForU(u)
+      const ox = (Math.random() - 0.5) * 14
+      const oy = (Math.random() - 0.5) * 14
+      // Initial velocity: mostly upward with a loose angular spread (smoke rises, wispy)
+      const ang = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 0.85
+      const spd = 0.06 + Math.random() * 0.16
+      const life = 1300 + Math.random() * 1400
+      particles.push({
+        x: mouse.x + ox, y: mouse.y + oy,
+        vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd,
+        life, maxLife: life,
+        // Large blobs — many overlapping at low alpha = volumetric cloud
+        size: 22 + Math.random() * 28,
+        r: col.r, g: col.g, b: col.b,
+        alpha0: 0.034 + Math.random() * 0.042,
+        seed: Math.random() * 1000,
+      })
     }
 
-    // ---- silver/chrome wireframe sphere ----
-    function drawSphere(t: number) {
-      sphereCtx.clearRect(0, 0, W, H)
-      const cx = W / 2, cy = H / 2
-      const R = Math.min(W, H) * 0.38
+    function updateAndDrawSmoke(dt: number, now: number) {
+      // Physics pass
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i]
+        p.life -= dt
+        if (p.life <= 0) { particles.splice(i, 1); continue }
 
-      const ay = t * 0.00012
-      const ax = Math.sin(t * 0.00007) * 0.28
-      const cy_ = Math.cos(ay), sy_ = Math.sin(ay)
-      const cx_ = Math.cos(ax), sx_ = Math.sin(ax)
+        const [tx, ty] = smokeTurbulence(p.x, p.y, now, p.seed)
+        p.vx += tx * 0.007        // turbulence curl
+        p.vy += ty * 0.007 - 0.005 // curl + net upward buoyancy
 
-      function proj(p: number[]) {
-        let x = p[0] * cy_ + p[2] * sy_
-        let z = -p[0] * sy_ + p[2] * cy_
-        let y = p[1] * cx_ - z * sx_
-        z = p[1] * sx_ + z * cx_
-        return { x: cx + x * R, y: cy + y * R, z }
+        p.vx *= 0.974; p.vy *= 0.974 // drag — smoke is light
+        const sp = Math.hypot(p.vx, p.vy)
+        if (sp > 0.85) { p.vx *= 0.85 / sp; p.vy *= 0.85 / sp }
+
+        p.x += p.vx * dt * 0.06
+        p.y += p.vy * dt * 0.06
       }
 
-      // Metallic sheen: two overlapping sine waves simulate the shimmer as sphere rotates
-      const sheen = 0.88 + Math.sin(t * 0.053) * 0.07 + Math.sin(t * 0.031) * 0.05
-
-      // Pass 1 — soft silver halo (wide glow)
-      sphereCtx.lineWidth = 3
-      for (const c of SPHERE_CIRCLES) {
-        const projected = c.pts.map(proj)
-        for (let i = 0; i < projected.length; i++) {
-          const a = projected[i]
-          const b = projected[(i + 1) % projected.length]
-          const depth = ((a.z + b.z) * 0.5 + 1) * 0.5
-          const op = (0.012 + depth * 0.048) * sheen
-          sphereCtx.strokeStyle = `rgba(155,160,178,${op.toFixed(3)})`
-          sphereCtx.beginPath()
-          sphereCtx.moveTo(a.x, a.y)
-          sphereCtx.lineTo(b.x, b.y)
-          sphereCtx.stroke()
-        }
-      }
-
-      // Pass 2 — chrome mid-tone lines
-      sphereCtx.lineWidth = 0.5
-      for (const c of SPHERE_CIRCLES) {
-        const projected = c.pts.map(proj)
-        for (let i = 0; i < projected.length; i++) {
-          const a = projected[i]
-          const b = projected[(i + 1) % projected.length]
-          const depth = ((a.z + b.z) * 0.5 + 1) * 0.5
-          const op = (0.06 + depth * 0.30) * sheen
-          sphereCtx.strokeStyle = `rgba(200,205,222,${op.toFixed(3)})`
-          sphereCtx.beginPath()
-          sphereCtx.moveTo(a.x, a.y)
-          sphereCtx.lineTo(b.x, b.y)
-          sphereCtx.stroke()
-        }
-      }
-
-      // Pass 3 — specular highlight on front hemisphere only
-      sphereCtx.lineWidth = 0.5
-      for (const c of SPHERE_CIRCLES) {
-        const projected = c.pts.map(proj)
-        for (let i = 0; i < projected.length; i++) {
-          const a = projected[i]
-          const b = projected[(i + 1) % projected.length]
-          const zMid = (a.z + b.z) * 0.5
-          if (zMid < 0.45) continue
-          const specular = (zMid - 0.45) / 0.55
-          const op = specular * specular * 0.25 * sheen
-          sphereCtx.strokeStyle = `rgba(245,248,255,${op.toFixed(3)})`
-          sphereCtx.beginPath()
-          sphereCtx.moveTo(a.x, a.y)
-          sphereCtx.lineTo(b.x, b.y)
-          sphereCtx.stroke()
-        }
-      }
-
-      // Horizon ring — chrome edge with soft glow
-      sphereCtx.beginPath()
-      sphereCtx.arc(cx, cy, R, 0, Math.PI * 2)
-      sphereCtx.lineWidth = 2.5
-      sphereCtx.strokeStyle = `rgba(140,148,168,${(0.12 * sheen).toFixed(3)})`
-      sphereCtx.stroke()
-
-      sphereCtx.beginPath()
-      sphereCtx.arc(cx, cy, R, 0, Math.PI * 2)
-      sphereCtx.lineWidth = 0.7
-      sphereCtx.strokeStyle = `rgba(220,226,242,${(0.42 * sheen).toFixed(3)})`
-      sphereCtx.stroke()
-    }
-
-    // ---- ribbon trail ----
-    function drawTrailRibbon(now: number) {
-      // Expire old points
-      const cutoff = now - TRAIL_LIFE_MS
-      while (trail.length > 0 && trail[0].t < cutoff) trail.shift()
-
-      // Always clear — redraw entire trail fresh each frame so age-fade is precise
+      // Clear and redraw all particles fresh — precise per-particle age fade
       flowCtx.clearRect(0, 0, W, H)
-      if (trail.length < 2) return
 
-      flowCtx.lineCap = 'round'
-      flowCtx.lineJoin = 'round'
+      for (const p of particles) {
+        const lifeT = p.life / p.maxLife
+        // Fast fade-in, long plateau, gentle fade-out — cigarette smoke puff profile
+        const fadeIn = Math.min(1, (1 - lifeT) * 7)
+        const a = p.alpha0 * lifeT * fadeIn
+        if (a < 0.002) continue
 
-      for (const pass of RIBBON_PASSES) {
-        for (let i = 1; i < trail.length; i++) {
-          const p0 = trail[i - 1]
-          const p1 = trail[i]
+        // Expand as smoke dissipates (hot smoke cools and expands)
+        const rad = p.size * (1.0 + (1 - lifeT) * 1.7)
 
-          // Age: 1 = just spawned, 0 = about to expire. Use quadratic ease-out for natural fade.
-          const age0 = Math.max(0, 1 - (now - p0.t) / TRAIL_LIFE_MS)
-          const age1 = Math.max(0, 1 - (now - p1.t) / TRAIL_LIFE_MS)
-          const a0 = age0 * age0 * pass.alphaMult
-          const a1 = age1 * age1 * pass.alphaMult
-          if (a0 + a1 < 0.005) continue
+        const grad = flowCtx.createRadialGradient(p.x, p.y, 0, p.x, p.y, rad)
+        grad.addColorStop(0,    `rgba(${p.r},${p.g},${p.b},${a.toFixed(3)})`)
+        grad.addColorStop(0.40, `rgba(${p.r},${p.g},${p.b},${(a * 0.48).toFixed(3)})`)
+        grad.addColorStop(1,    `rgba(${p.r},${p.g},${p.b},0)`)
+        flowCtx.fillStyle = grad
+        flowCtx.beginPath()
+        flowCtx.arc(p.x, p.y, rad, 0, Math.PI * 2)
+        flowCtx.fill()
+      }
 
-          let c0 = getColorForU(p0.u)
-          let c1 = getColorForU(p1.u)
-
-          // Whiten the hot core toward luminous white
-          if (pass.whiten > 0) {
-            const w = pass.whiten
-            c0 = { r: Math.round(c0.r + (255 - c0.r) * w), g: Math.round(c0.g + (255 - c0.g) * w), b: Math.round(c0.b + (255 - c0.b) * w) }
-            c1 = { r: Math.round(c1.r + (255 - c1.r) * w), g: Math.round(c1.g + (255 - c1.g) * w), b: Math.round(c1.b + (255 - c1.b) * w) }
-          }
-
-          // Width tapers with age — fat at cursor tip, whisper-thin at tail
-          const lineWidth = ((age0 + age1) / 2) * pass.widthPx + 0.5
-
-          const dx = p1.x - p0.x, dy = p1.y - p0.y
-          const dist = Math.hypot(dx, dy)
-
-          // For segments shorter than ~2px, use solid midpoint color (skips gradient creation)
-          if (dist < 2 || Math.abs(p0.u - p1.u) < 0.005) {
-            const mc = getColorForU((p0.u + p1.u) / 2)
-            const ma = (a0 + a1) / 2
-            flowCtx.strokeStyle = `rgba(${mc.r},${mc.g},${mc.b},${ma.toFixed(3)})`
-          } else {
-            const grad = flowCtx.createLinearGradient(p0.x, p0.y, p1.x, p1.y)
-            grad.addColorStop(0, `rgba(${c0.r},${c0.g},${c0.b},${a0.toFixed(3)})`)
-            grad.addColorStop(1, `rgba(${c1.r},${c1.g},${c1.b},${a1.toFixed(3)})`)
-            flowCtx.strokeStyle = grad
-          }
-
-          flowCtx.lineWidth = lineWidth
-          flowCtx.beginPath()
-          flowCtx.moveTo(p0.x, p0.y)
-          flowCtx.lineTo(p1.x, p1.y)
-          flowCtx.stroke()
-        }
+      // Spawn new particles only while cursor is on ink
+      if (cursorOnInk() && logoBox) {
+        const count = Math.max(1, Math.floor(11 * dt / 16.7))
+        for (let i = 0; i < count; i++) spawnSmoke()
       }
     }
 
     // ---- main loop ----
-    let last = performance.now()
-    let rafId = 0
+    let last = performance.now(), rafId = 0
     function frame(now: number) {
-      last = now
+      const dt = Math.min(50, now - last); last = now
       drawRings(now)
       drawSphere(now)
       animateLogo(now)
-      drawTrailRibbon(now)
+      updateAndDrawSmoke(dt, now)
       rafId = requestAnimationFrame(frame)
     }
     rafId = requestAnimationFrame(frame)
@@ -403,32 +373,22 @@ export default function HeroCanvas() {
     }
   }, [])
 
-  const silverGradient = 'linear-gradient(172deg, #ececf0 0%, #9a9aaa 38%, #d4d4e0 62%, #f2f2f6 100%)'
-
   return (
     <main style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden' }}>
+      {/* SVG filter definition — hidden, referenced by logo via CSS filter */}
+      <svg
+        style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}
+        aria-hidden="true"
+        dangerouslySetInnerHTML={{ __html: METAL_FILTER_SVG }}
+      />
+
       <canvas ref={ringsRef}  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 }} />
       <canvas ref={sphereRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 2 }} />
 
-      {/*
-        flow canvas at z-index 3, logo at z-index 4.
-        The ribbon glow sits BELOW the silver letters — light appears to
-        radiate from behind the letterforms, not float on top of them.
-      */}
-      <canvas ref={flowRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 3 }} />
+      {/* Smoke canvas sits BELOW the logo so colored light glows from behind the letters */}
+      <canvas ref={flowRef}   style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 3 }} />
 
-      <div
-        style={{
-          position: 'absolute',
-          left: '50%',
-          top: '50%',
-          transform: 'translate(-50%,-50%)',
-          zIndex: 4,
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-      >
+      <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', zIndex: 4, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         <div
           ref={logoRef}
           style={{
@@ -436,10 +396,10 @@ export default function HeroCanvas() {
             fontWeight: 400,
             fontSize: 'clamp(72px, 12vw, 188px)',
             letterSpacing: '0.04em',
-            background: silverGradient,
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
+            // Dark base color — SVG filter uses SourceAlpha (the text shape) as mask,
+            // then replaces the fill entirely with brushed-metal texture
+            color: '#1c1c24',
+            filter: 'url(#brushed-metal)',
             whiteSpace: 'nowrap',
             userSelect: 'none',
             willChange: 'transform',
