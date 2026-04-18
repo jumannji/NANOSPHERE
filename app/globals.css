@@ -47,22 +47,22 @@ nav {
 }
 
 .nav-links a {
-  color: #ae3319;
+  color: #121214;
   text-decoration: none;
   transition: color 350ms ease, border-color 350ms ease;
   position: relative;
   padding: 2px 0;
 }
-.nav-links a:hover { color: #8a2814; }
+.nav-links a:hover { color: #000; }
 
 .nav-links a.pill {
   position: relative;
   padding: 9px 22px;
-  border: 0.5px solid #ae3319;
+  border: 0.5px solid #121214;
   border-radius: 999px;
   overflow: hidden;
   isolation: isolate;
-  color: #ae3319;
+  color: #121214;
 }
 .nav-links a.pill .pill-label {
   position: relative;
@@ -92,7 +92,7 @@ nav {
 .nav-links a.pill:hover::before,
 .nav-links a.pill:hover::after { transform: scaleX(1); }
 .nav-links a.pill:hover {
-  border-color: #8a2814;
+  border-color: #000;
 }
 .nav-links a.pill:hover .pill-label { color: #fafafa; }
 
