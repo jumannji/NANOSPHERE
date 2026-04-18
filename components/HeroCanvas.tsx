@@ -2,67 +2,26 @@
 
 import { useEffect, useRef } from 'react'
 
-const WORD = 'NanoSphere'
-const BLUE_PALETTE = [
-  { r:  14, g:  34, b:  92 },
-  { r:  22, g:  58, b: 148 },
-  { r:  30, g:  82, b: 190 },
-  { r:  52, g: 116, b: 230 },
-  { r:  20, g:  76, b: 128 },
-  { r:  74, g: 140, b: 222 },
-  { r:  38, g:  98, b: 204 },
-]
-const RED_PALETTE = [
-  { r:  92, g:  14, b:  22 },
-  { r: 148, g:  22, b:  34 },
-  { r: 190, g:  30, b:  46 },
-  { r: 222, g:  58, b:  68 },
-  { r: 128, g:  20, b:  28 },
-  { r: 230, g:  86, b:  92 },
-  { r: 204, g:  42, b:  54 },
-]
-
-function pickBlendedColor(u: number) {
-  const blue = BLUE_PALETTE[(Math.random() * BLUE_PALETTE.length) | 0]
-  const red  = RED_PALETTE [(Math.random() * RED_PALETTE.length ) | 0]
-  let t: number
-  if (u <= 0.38) t = 0
-  else if (u >= 0.62) t = 1
-  else t = (u - 0.38) / 0.24
-  t = t * t * (3 - 2 * t)
-  return {
-    r: Math.round(blue.r + (red.r - blue.r) * t),
-    g: Math.round(blue.g + (red.g - blue.g) * t),
-    b: Math.round(blue.b + (red.b - blue.b) * t),
-  }
-}
-
 const SPHERE_CIRCLES = (() => {
-  const arr: { kind: string; pts: number[][] }[] = []
+  const arr: { pts: number[][] }[] = []
   const segs = 96
-  const numLong = 9
-  for (let i = 0; i < numLong; i++) {
-    const theta = (i / numLong) * Math.PI
+  for (let i = 0; i < 9; i++) {
+    const theta = (i / 9) * Math.PI
     const pts: number[][] = []
     for (let s = 0; s < segs; s++) {
       const u = (s / segs) * Math.PI * 2
-      pts.push([
-        Math.cos(u) * Math.cos(theta),
-        Math.sin(u),
-        Math.cos(u) * Math.sin(theta),
-      ])
+      pts.push([Math.cos(u) * Math.cos(theta), Math.sin(u), Math.cos(u) * Math.sin(theta)])
     }
-    arr.push({ kind: 'long', pts })
+    arr.push({ pts })
   }
-  const lats = [-0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75]
-  for (const ly of lats) {
+  for (const ly of [-0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75]) {
     const r = Math.sqrt(1 - ly * ly)
     const pts: number[][] = []
     for (let s = 0; s < segs; s++) {
       const u = (s / segs) * Math.PI * 2
       pts.push([Math.cos(u) * r, ly, Math.sin(u) * r])
     }
-    arr.push({ kind: 'lat', pts })
+    arr.push({ pts })
   }
   return arr
 })()
@@ -79,10 +38,9 @@ interface Particle {
   x: number; y: number
   vx: number; vy: number
   life: number; maxLife: number
-  size: number
-  r: number; g: number; b: number
-  alpha0: number
-  wob: number; wobSpeed: number
+  size: number     // radius at birth
+  alpha0: number   // peak alpha
+  seed: number     // per-particle turbulence phase
 }
 
 export default function HeroCanvas() {
@@ -96,23 +54,18 @@ export default function HeroCanvas() {
     const sphereCanvas = sphereRef.current!
     const flowCanvas   = flowRef.current!
     const logo         = logoRef.current!
-
     const ringsCtx  = ringsCanvas.getContext('2d')!
     const sphereCtx = sphereCanvas.getContext('2d')!
     const flowCtx   = flowCanvas.getContext('2d')!
 
-    let W = 0, H = 0
-    let DPR = Math.min(window.devicePixelRatio || 1, 2)
+    let W = 0, H = 0, DPR = 1
 
     function resize() {
       DPR = Math.min(window.devicePixelRatio || 1, 2)
-      W = window.innerWidth
-      H = window.innerHeight
+      W = window.innerWidth; H = window.innerHeight
       for (const c of [ringsCanvas, sphereCanvas, flowCanvas]) {
-        c.width  = Math.floor(W * DPR)
-        c.height = Math.floor(H * DPR)
-        c.style.width  = W + 'px'
-        c.style.height = H + 'px'
+        c.width  = Math.floor(W * DPR); c.height = Math.floor(H * DPR)
+        c.style.width = W + 'px';       c.style.height = H + 'px'
       }
       ringsCtx.setTransform(DPR, 0, 0, DPR, 0, 0)
       sphereCtx.setTransform(DPR, 0, 0, DPR, 0, 0)
@@ -121,232 +74,170 @@ export default function HeroCanvas() {
     resize()
     window.addEventListener('resize', resize)
 
-    const mouse = { x: -9999, y: -9999, inside: false }
-    const onMouseMove = (e: MouseEvent) => { mouse.x = e.clientX; mouse.y = e.clientY; mouse.inside = true }
-    const onMouseLeave = () => { mouse.inside = false }
+    // Smoothed mouse with velocity — velocity drives the directional trail
+    const mouse = { x: -9999, y: -9999, inside: false, vx: 0, vy: 0 }
+    let lastMoveTime = 0
+
+    const onMouseMove = (e: MouseEvent) => {
+      const rawVx = e.clientX - mouse.x
+      const rawVy = e.clientY - mouse.y
+      mouse.vx = mouse.vx * 0.38 + rawVx * 0.62
+      mouse.vy = mouse.vy * 0.38 + rawVy * 0.62
+      mouse.x = e.clientX; mouse.y = e.clientY
+      mouse.inside = true
+      lastMoveTime = performance.now()
+    }
+    const onMouseLeave = () => { mouse.inside = false; mouse.vx = 0; mouse.vy = 0 }
     window.addEventListener('mousemove', onMouseMove)
     window.addEventListener('mouseleave', onMouseLeave)
 
+    // ── logo float ──────────────────────────────────────────────────
     function animateLogo(t: number) {
-      const r = 5
-      const tx = Math.cos(t * 0.00025) * r
-      const ty = Math.sin(t * 0.00020) * r * 0.7
+      const tx = Math.cos(t * 0.00025) * 5
+      const ty = Math.sin(t * 0.00020) * 5 * 0.7
       const rot = Math.sin(t * 0.00018) * 1.0
       logo.style.transform = `translate(${tx.toFixed(2)}px,${ty.toFixed(2)}px) rotate(${rot.toFixed(3)}deg)`
     }
 
+    // ── orbit rings ──────────────────────────────────────────────────
     function drawRings(t: number) {
       ringsCtx.clearRect(0, 0, W, H)
-      const cx = W / 2, cy = H / 2
-      const baseR = Math.min(W, H) * 0.48
+      const cx = W / 2, cy = H / 2, baseR = Math.min(W, H) * 0.48
       ringsCtx.lineWidth = 0.5
       for (const ring of RINGS_DEF) {
         const pulse = Math.sin(t * ring.speed + ring.phase) * 0.5 + 0.5
         const r = baseR * ring.rScale * (0.96 + pulse * 0.08)
-        const opacity = 0.05 + pulse * 0.05
-        ringsCtx.strokeStyle = `rgba(20,20,18,${opacity.toFixed(3)})`
-        ringsCtx.beginPath()
-        ringsCtx.arc(cx, cy, r, 0, Math.PI * 2)
-        ringsCtx.stroke()
+        ringsCtx.strokeStyle = `rgba(20,20,18,${(0.05 + pulse * 0.05).toFixed(3)})`
+        ringsCtx.beginPath(); ringsCtx.arc(cx, cy, r, 0, Math.PI * 2); ringsCtx.stroke()
       }
     }
 
+    // ── wireframe sphere ─────────────────────────────────────────────
     function drawSphere(t: number) {
       sphereCtx.clearRect(0, 0, W, H)
-      const cx = W / 2, cy = H / 2
-      const R = Math.min(W, H) * 0.38
-      const ay = t * 0.00012
-      const ax = Math.sin(t * 0.00007) * 0.28
+      const cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.38
+      const ay = t * 0.00012, ax = Math.sin(t * 0.00007) * 0.28
       const cy_ = Math.cos(ay), sy_ = Math.sin(ay)
       const cx_ = Math.cos(ax), sx_ = Math.sin(ax)
-
       function proj(p: number[]) {
-        let x = p[0] * cy_ + p[2] * sy_
-        let z = -p[0] * sy_ + p[2] * cy_
-        let y = p[1] * cx_ - z * sx_
-        z = p[1] * sx_ + z * cx_
-        return { x: cx + x * R, y: cy + y * R, z }
+        let x = p[0]*cy_ + p[2]*sy_, z = -p[0]*sy_ + p[2]*cy_
+        let y = p[1]*cx_ - z*sx_;    z = p[1]*sx_ + z*cx_
+        return { x: cx + x*R, y: cy + y*R, z }
       }
-
       sphereCtx.lineWidth = 0.5
       for (const c of SPHERE_CIRCLES) {
-        const projected = c.pts.map(proj)
-        for (let i = 0; i < projected.length; i++) {
-          const a = projected[i]
-          const b = projected[(i + 1) % projected.length]
-          const zMid = (a.z + b.z) * 0.5
-          const depth = (zMid + 1) * 0.5
-          const op = 0.03 + depth * 0.22
+        const proj_ = c.pts.map(proj)
+        for (let i = 0; i < proj_.length; i++) {
+          const a = proj_[i], b = proj_[(i + 1) % proj_.length]
+          const op = 0.03 + ((a.z + b.z) * 0.5 + 1) * 0.5 * 0.22
           sphereCtx.strokeStyle = `rgba(18,18,20,${op.toFixed(3)})`
-          sphereCtx.beginPath()
-          sphereCtx.moveTo(a.x, a.y)
-          sphereCtx.lineTo(b.x, b.y)
-          sphereCtx.stroke()
+          sphereCtx.beginPath(); sphereCtx.moveTo(a.x, a.y); sphereCtx.lineTo(b.x, b.y); sphereCtx.stroke()
         }
       }
-      sphereCtx.lineWidth = 0.5
       sphereCtx.strokeStyle = 'rgba(18,18,20,0.32)'
-      sphereCtx.beginPath()
-      sphereCtx.arc(cx, cy, R, 0, Math.PI * 2)
-      sphereCtx.stroke()
+      sphereCtx.beginPath(); sphereCtx.arc(cx, cy, R, 0, Math.PI * 2); sphereCtx.stroke()
     }
 
-    // ---- ink mask ----
-    let zonePoints: { x: number; y: number }[][] = []
-    let inkMask: { data: Uint8Array; w: number; h: number; mScale: number } | null = null
-    let logoBox: DOMRect | null = null
+    // ── white mist / breath ──────────────────────────────────────────
+    //
+    //  Philosophy:
+    //  • Particles spawn at cursor position only while cursor is moving.
+    //  • Each particle inherits a fraction of cursor velocity so it initially
+    //    moves in the same direction — cursor moves on, particle lags behind,
+    //    creating a natural breath-like trail.
+    //  • Turbulence (overlapping sine-field approximation) bends particles
+    //    organically after birth so straight trails curl into wisps.
+    //  • Long life (2-3 s) means the mist lingers visibly after cursor stops.
+    //  • All white, very low alpha — many overlapping blobs merge into
+    //    soft volumetric cloud. Never dotty, never linear.
 
-    function sampleLogoPoints() {
-      const rect = logo.getBoundingClientRect()
-      if (!rect.width || !rect.height) { zonePoints = []; logoBox = null; inkMask = null; return }
-      logoBox = rect
-      const cs = getComputedStyle(logo)
-      const fontSize = parseFloat(cs.fontSize)
-      const fontFamily = cs.fontFamily
-      const fontWeight = cs.fontWeight
-      const scale = 2
-      const padX = Math.ceil(fontSize * 0.4)
-      const padY = Math.ceil(fontSize * 0.3)
-      const ow = Math.ceil((rect.width + padX * 2) * scale)
-      const oh = Math.ceil((rect.height + padY * 2) * scale)
-      const off = document.createElement('canvas')
-      off.width = ow; off.height = oh
-      const octx = off.getContext('2d')!
-      octx.fillStyle = '#000'
-      octx.fillRect(0, 0, ow, oh)
-      octx.fillStyle = '#fff'
-      octx.textBaseline = 'middle'
-      octx.textAlign = 'center'
-      octx.font = `${fontWeight} ${fontSize * scale}px ${fontFamily}`
-      octx.fillText(WORD, ow / 2, oh / 2)
-      const img = octx.getImageData(0, 0, ow, oh).data
-      const mScale = 2
-      const mw = Math.ceil(rect.width / mScale) + 2
-      const mh = Math.ceil(rect.height / mScale) + 2
-      const mask = new Uint8Array(mw * mh)
-      const zones: { x: number; y: number }[][] = Array.from({ length: WORD.length }, () => [])
-      const step = 3
-      const xStart = padX * scale
-      const xEnd   = (padX + rect.width) * scale
-      const textW  = Math.max(1, xEnd - xStart)
-      for (let y = 0; y < oh; y += step) {
-        for (let x = 0; x < ow; x += step) {
-          const idx = (y * ow + x) * 4
-          if (img[idx] > 160) {
-            const u = (x - xStart) / textW
-            const zi = Math.max(0, Math.min(WORD.length - 1, Math.floor(u * WORD.length)))
-            const sx = rect.left - padX + x / scale
-            const sy = rect.top  - padY + y / scale
-            zones[zi].push({ x: sx, y: sy })
-            const mx = Math.floor((sx - rect.left) / mScale)
-            const my = Math.floor((sy - rect.top)  / mScale)
-            for (let dy = -1; dy <= 1; dy++) {
-              for (let dx = -1; dx <= 1; dx++) {
-                const xx = mx + dx, yy = my + dy
-                if (xx >= 0 && yy >= 0 && xx < mw && yy < mh) mask[yy * mw + xx] = 1
-              }
-            }
-          }
-        }
-      }
-      zonePoints = zones
-      inkMask = { data: mask, w: mw, h: mh, mScale }
-    }
-
-    if (document.fonts?.ready) {
-      document.fonts.ready.then(sampleLogoPoints)
-    } else {
-      window.addEventListener('load', sampleLogoPoints)
-    }
-    const onResizeSample = () => setTimeout(sampleLogoPoints, 50)
-    window.addEventListener('resize', onResizeSample)
-
-    function cursorOnInk() {
-      if (!inkMask || !logoBox || !mouse.inside) return false
-      const lx = mouse.x - logoBox.left
-      const ly = mouse.y - logoBox.top
-      if (lx < 0 || ly < 0 || lx > logoBox.width || ly > logoBox.height) return false
-      const mx = Math.floor(lx / inkMask.mScale)
-      const my = Math.floor(ly / inkMask.mScale)
-      if (mx < 0 || my < 0 || mx >= inkMask.w || my >= inkMask.h) return false
-      return inkMask.data[my * inkMask.w + mx] === 1
-    }
-
-    // ---- particles ----
     const particles: Particle[] = []
-    const MAX_PARTICLES = 2400
+    const MAX_PARTICLES = 1400
+    const IDLE_CUTOFF_MS = 90  // stop spawning this many ms after cursor last moved
 
-    function fadeFlowCanvas() {
-      flowCtx.globalCompositeOperation = 'destination-out'
-      // Faster fade = shorter trails, more smoke-like
-      flowCtx.fillStyle = 'rgba(0,0,0,0.11)'
-      flowCtx.fillRect(0, 0, W, H)
-      flowCtx.globalCompositeOperation = 'source-over'
+    // Two-frequency turbulence field — produces gentle swirling without hard edges
+    function driftField(x: number, y: number, t: number, seed: number): [number, number] {
+      const T = t * 0.00038, S = seed
+      const fx = Math.sin(x * 0.017 + T        + S)       * 0.42
+               + Math.cos(y * 0.021 - T * 0.75 + S * 0.9) * 0.32
+               + Math.sin((x - y) * 0.011 + T * 1.2 + S * 0.5) * 0.16
+      const fy = Math.cos(x * 0.021 + T * 1.1  + S * 0.7) * 0.42
+               + Math.sin(y * 0.015 - T * 0.85 - S * 0.6) * 0.32
+               + Math.cos((x + y) * 0.010 + T * 0.9 - S * 0.4) * 0.16
+      return [fx, fy]
     }
 
-    function spawnFromZone(zi: number, count: number) {
-      const pts = zonePoints[zi]
-      if (!pts || !pts.length || !logoBox) return
-      for (let i = 0; i < count; i++) {
-        if (particles.length >= MAX_PARTICLES) break
-        const p = pts[(Math.random() * pts.length) | 0]
-        const u = Math.max(0, Math.min(1, (p.x - logoBox.left) / logoBox.width))
-        const col = pickBlendedColor(u)
-        // Mostly upward with lateral spread — aurora/smoke drift
-        const lateralSpread = (Math.random() - 0.5) * 1.2
-        const upSpeed = 0.4 + Math.random() * 0.9
-        const life = 900 + Math.random() * 700
-        particles.push({
-          x: p.x, y: p.y,
-          vx: lateralSpread,
-          vy: -upSpeed,
-          life, maxLife: life,
-          // Large soft blobs — many overlapping = aurora glow
-          size: 10 + Math.random() * 18,
-          r: col.r, g: col.g, b: col.b,
-          alpha0: 0.055 + Math.random() * 0.065,
-          wob: Math.random() * Math.PI * 2,
-          wobSpeed: 0.0012 + Math.random() * 0.0016,
-        })
-      }
+    function spawnMist(now: number) {
+      if (!mouse.inside) return
+      if (now - lastMoveTime > IDLE_CUTOFF_MS) return
+      if (particles.length >= MAX_PARTICLES) return
+
+      const speed = Math.hypot(mouse.vx, mouse.vy)
+      // Trail direction: particles inherit a slow fraction of cursor velocity.
+      // Angular spread is wider at low speed (ambient wisp) and narrower at speed.
+      const trailFrac = 0.08 + Math.random() * 0.14
+      const baseAng   = Math.atan2(mouse.vy, mouse.vx)
+      const spread    = speed > 3 ? 0.55 : 1.1      // radians half-angle
+      const ang       = baseAng + (Math.random() - 0.5) * spread * 2
+
+      const life = 1900 + Math.random() * 1200       // 1.9 – 3.1 s
+      const ox   = (Math.random() - 0.5) * 10
+      const oy   = (Math.random() - 0.5) * 10
+
+      particles.push({
+        x: mouse.x + ox, y: mouse.y + oy,
+        vx: Math.cos(ang) * speed * trailFrac,
+        vy: Math.sin(ang) * speed * trailFrac,
+        life, maxLife: life,
+        size:   24 + Math.random() * 28,             // 24 – 52 px
+        alpha0: 0.025 + Math.random() * 0.032,       // very translucent
+        seed:   Math.random() * 1000,
+      })
     }
 
-    function updateParticles(dt: number) {
-      fadeFlowCanvas()
-      flowCtx.globalCompositeOperation = 'source-over'
+    function updateAndDrawMist(dt: number, now: number) {
+      // Spawn batch
+      const spawnN = Math.max(1, Math.floor(7 * dt / 16.7))
+      for (let i = 0; i < spawnN; i++) spawnMist(now)
+
+      // Physics — update all live particles
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i]
         p.life -= dt
         if (p.life <= 0) { particles.splice(i, 1); continue }
 
-        // Gentle lateral wobble for organic flow
-        p.wob += p.wobSpeed * dt
-        p.vx += Math.cos(p.wob) * 0.018
-        // Sustained upward buoyancy
-        p.vy -= 0.022
+        const [fx, fy] = driftField(p.x, p.y, now, p.seed)
+        p.vx += fx * 0.0038
+        p.vy += fy * 0.0038
 
-        // Light drag — let them float freely
-        p.vx *= 0.96
-        p.vy *= 0.97
+        // Gentle drag — breath lingers, doesn't snap to a halt
+        p.vx *= 0.983; p.vy *= 0.983
 
+        // Soft speed cap — no shooting particles
         const sp = Math.hypot(p.vx, p.vy)
-        const maxSp = 2.8
-        if (sp > maxSp) { p.vx *= maxSp / sp; p.vy *= maxSp / sp }
+        if (sp > 1.1) { p.vx *= 1.1 / sp; p.vy *= 1.1 / sp }
 
-        p.x += p.vx * dt * 0.06
-        p.y += p.vy * dt * 0.06
+        p.x += p.vx * dt * 0.055
+        p.y += p.vy * dt * 0.055
+      }
 
-        const lifeT = p.life / p.maxLife
-        // Quick fade-in, long fade-out for smoke puff feel
-        const fadeIn = Math.min(1, (1 - lifeT) * 6)
-        const a = p.alpha0 * lifeT * fadeIn
-        // Grow slightly as they rise (smoke expansion)
-        const rad = p.size * (1 + (1 - lifeT) * 1.2)
+      // Redraw entire canvas fresh every frame — precise per-particle age fade
+      flowCtx.clearRect(0, 0, W, H)
+
+      for (const p of particles) {
+        const lifeT  = p.life / p.maxLife          // 1 → 0 over lifetime
+        // Ease-in quickly, ease-out gently over the long tail
+        const fadeIn = Math.min(1, (1 - lifeT) * 8)
+        const a      = p.alpha0 * lifeT * fadeIn
+        if (a < 0.0018) continue
+
+        // Radius expands as mist dissipates — wispy edges grow outward
+        const rad = p.size * (1 + (1 - lifeT) * 2.0)
 
         const grad = flowCtx.createRadialGradient(p.x, p.y, 0, p.x, p.y, rad)
-        grad.addColorStop(0,    `rgba(${p.r},${p.g},${p.b},${a.toFixed(3)})`)
-        grad.addColorStop(0.45, `rgba(${p.r},${p.g},${p.b},${(a * 0.4).toFixed(3)})`)
-        grad.addColorStop(1,    `rgba(${p.r},${p.g},${p.b},0)`)
+        grad.addColorStop(0,    `rgba(255,255,255,${a.toFixed(4)})`)
+        grad.addColorStop(0.38, `rgba(255,255,255,${(a * 0.44).toFixed(4)})`)
+        grad.addColorStop(1,    'rgba(255,255,255,0)')
         flowCtx.fillStyle = grad
         flowCtx.beginPath()
         flowCtx.arc(p.x, p.y, rad, 0, Math.PI * 2)
@@ -354,28 +245,14 @@ export default function HeroCanvas() {
       }
     }
 
-    function spawnIfOverInk(dt: number) {
-      if (!cursorOnInk()) return
-      const u = Math.max(0, Math.min(0.9999, (mouse.x - logoBox!.left) / logoBox!.width))
-      const zi = Math.floor(u * WORD.length)
-      // Higher burst rate for dense smoke/aurora response
-      const baseRate = 28
-      const spawn = Math.max(2, Math.floor(baseRate * (dt / 16.7)))
-      spawnFromZone(zi, spawn)
-      if (zi > 0)               spawnFromZone(zi - 1, Math.ceil(spawn * 0.5))
-      if (zi < WORD.length - 1) spawnFromZone(zi + 1, Math.ceil(spawn * 0.5))
-    }
-
-    let last = performance.now()
-    let rafId = 0
+    // ── main loop ────────────────────────────────────────────────────
+    let last = performance.now(), rafId = 0
     function frame(now: number) {
-      const dt = Math.min(50, now - last)
-      last = now
+      const dt = Math.min(50, now - last); last = now
       drawRings(now)
       drawSphere(now)
       animateLogo(now)
-      spawnIfOverInk(dt)
-      updateParticles(dt)
+      updateAndDrawMist(dt, now)
       rafId = requestAnimationFrame(frame)
     }
     rafId = requestAnimationFrame(frame)
@@ -383,7 +260,6 @@ export default function HeroCanvas() {
     return () => {
       cancelAnimationFrame(rafId)
       window.removeEventListener('resize', resize)
-      window.removeEventListener('resize', onResizeSample)
       window.removeEventListener('mousemove', onMouseMove)
       window.removeEventListener('mouseleave', onMouseLeave)
     }
@@ -391,20 +267,9 @@ export default function HeroCanvas() {
 
   return (
     <main style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden' }}>
-      <canvas ref={ringsRef}  id="rings"  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 }} />
-      <canvas ref={sphereRef} id="sphere" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 2 }} />
-      <div
-        style={{
-          position: 'absolute',
-          left: '50%',
-          top: '50%',
-          transform: 'translate(-50%,-50%)',
-          zIndex: 3,
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-      >
+      <canvas ref={ringsRef}  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 }} />
+      <canvas ref={sphereRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 2 }} />
+      <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', zIndex: 3, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         <div
           ref={logoRef}
           style={{
@@ -424,7 +289,13 @@ export default function HeroCanvas() {
           NanoSphere
         </div>
       </div>
-      <canvas ref={flowRef} id="flow" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 4, mixBlendMode: 'multiply' }} />
+      {/*
+        Flow canvas sits above the logo (zIndex 4) so white mist drifts
+        across the entire page — over the background, over the sphere,
+        over the letterforms. Normal blend (no multiply) so white is visible
+        on the yellow background.
+      */}
+      <canvas ref={flowRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 4 }} />
     </main>
   )
 }
