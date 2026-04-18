@@ -3,28 +3,31 @@
 import { useEffect, useRef } from 'react'
 
 const WORD = 'NanoSphere'
+
+// Vivid electric blues (#4488ff territory and brighter)
 const BLUE_PALETTE = [
-  { r:  14, g:  34, b:  92 },
-  { r:  22, g:  58, b: 148 },
-  { r:  30, g:  82, b: 190 },
-  { r:  52, g: 116, b: 230 },
-  { r:  20, g:  76, b: 128 },
-  { r:  74, g: 140, b: 222 },
-  { r:  38, g:  98, b: 204 },
+  { r:  68, g: 136, b: 255 }, // #4488ff
+  { r:  40, g: 110, b: 255 },
+  { r:  80, g: 160, b: 255 },
+  { r:  30, g:  90, b: 240 },
+  { r: 100, g: 180, b: 255 },
+  { r:  55, g: 125, b: 255 },
+  { r:  20, g:  70, b: 220 },
 ]
 const RED_PALETTE = [
-  { r:  92, g:  14, b:  22 },
-  { r: 148, g:  22, b:  34 },
-  { r: 190, g:  30, b:  46 },
-  { r: 222, g:  58, b:  68 },
-  { r: 128, g:  20, b:  28 },
-  { r: 230, g:  86, b:  92 },
-  { r: 204, g:  42, b:  54 },
+  { r: 220, g:  40, b:  60 },
+  { r: 200, g:  30, b:  50 },
+  { r: 240, g:  60, b:  80 },
+  { r: 180, g:  20, b:  40 },
+  { r: 255, g:  70, b:  90 },
+  { r: 210, g:  45, b:  65 },
+  { r: 190, g:  25, b:  45 },
 ]
 
 function pickBlendedColor(u: number) {
   const blue = BLUE_PALETTE[(Math.random() * BLUE_PALETTE.length) | 0]
   const red  = RED_PALETTE [(Math.random() * RED_PALETTE.length ) | 0]
+  // Blue on left half of logo, red on right, smooth blend in middle
   let t: number
   if (u <= 0.38) t = 0
   else if (u >= 0.62) t = 1
@@ -121,12 +124,23 @@ export default function HeroCanvas() {
     resize()
     window.addEventListener('resize', resize)
 
-    const mouse = { x: -9999, y: -9999, inside: false }
-    const onMouseMove = (e: MouseEvent) => { mouse.x = e.clientX; mouse.y = e.clientY; mouse.inside = true }
-    const onMouseLeave = () => { mouse.inside = false }
+    // Mouse with smoothed velocity for trail direction
+    const mouse = { x: -9999, y: -9999, inside: false, vx: 0, vy: 0 }
+    const onMouseMove = (e: MouseEvent) => {
+      const rawVx = e.clientX - mouse.x
+      const rawVy = e.clientY - mouse.y
+      // Exponential moving average — smooths jitter while staying responsive
+      mouse.vx = mouse.vx * 0.35 + rawVx * 0.65
+      mouse.vy = mouse.vy * 0.35 + rawVy * 0.65
+      mouse.x = e.clientX
+      mouse.y = e.clientY
+      mouse.inside = true
+    }
+    const onMouseLeave = () => { mouse.inside = false; mouse.vx = 0; mouse.vy = 0 }
     window.addEventListener('mousemove', onMouseMove)
     window.addEventListener('mouseleave', onMouseLeave)
 
+    // ---- logo float ----
     function animateLogo(t: number) {
       const r = 5
       const tx = Math.cos(t * 0.00025) * r
@@ -135,6 +149,7 @@ export default function HeroCanvas() {
       logo.style.transform = `translate(${tx.toFixed(2)}px,${ty.toFixed(2)}px) rotate(${rot.toFixed(3)}deg)`
     }
 
+    // ---- orbit rings ----
     function drawRings(t: number) {
       ringsCtx.clearRect(0, 0, W, H)
       const cx = W / 2, cy = H / 2
@@ -151,10 +166,12 @@ export default function HeroCanvas() {
       }
     }
 
+    // ---- cyberpunk wireframe sphere ----
     function drawSphere(t: number) {
       sphereCtx.clearRect(0, 0, W, H)
       const cx = W / 2, cy = H / 2
       const R = Math.min(W, H) * 0.38
+
       const ay = t * 0.00012
       const ax = Math.sin(t * 0.00007) * 0.28
       const cy_ = Math.cos(ay), sy_ = Math.sin(ay)
@@ -168,7 +185,10 @@ export default function HeroCanvas() {
         return { x: cx + x * R, y: cy + y * R, z }
       }
 
-      sphereCtx.lineWidth = 0.5
+      // Subtle flicker — two overlapping sine waves at prime-ish frequencies
+      const flicker = 0.82 + Math.sin(t * 0.053) * 0.10 + Math.sin(t * 0.029) * 0.08
+
+      // Pass 1: wide soft glow (cyan-electric blue)
       for (const c of SPHERE_CIRCLES) {
         const projected = c.pts.map(proj)
         for (let i = 0; i < projected.length; i++) {
@@ -176,29 +196,55 @@ export default function HeroCanvas() {
           const b = projected[(i + 1) % projected.length]
           const zMid = (a.z + b.z) * 0.5
           const depth = (zMid + 1) * 0.5
-          const op = 0.03 + depth * 0.22
-          sphereCtx.strokeStyle = `rgba(18,18,20,${op.toFixed(3)})`
+          const op = (0.012 + depth * 0.055) * flicker
+          sphereCtx.strokeStyle = `rgba(0,190,255,${op.toFixed(3)})`
+          sphereCtx.lineWidth = 3.5
           sphereCtx.beginPath()
           sphereCtx.moveTo(a.x, a.y)
           sphereCtx.lineTo(b.x, b.y)
           sphereCtx.stroke()
         }
       }
-      sphereCtx.lineWidth = 0.5
-      sphereCtx.strokeStyle = 'rgba(18,18,20,0.32)'
+
+      // Pass 2: crisp fine lines with depth-modulated opacity
+      for (const c of SPHERE_CIRCLES) {
+        const projected = c.pts.map(proj)
+        for (let i = 0; i < projected.length; i++) {
+          const a = projected[i]
+          const b = projected[(i + 1) % projected.length]
+          const zMid = (a.z + b.z) * 0.5
+          const depth = (zMid + 1) * 0.5
+          const op = (0.06 + depth * 0.32) * flicker
+          sphereCtx.strokeStyle = `rgba(80,210,255,${op.toFixed(3)})`
+          sphereCtx.lineWidth = 0.5
+          sphereCtx.beginPath()
+          sphereCtx.moveTo(a.x, a.y)
+          sphereCtx.lineTo(b.x, b.y)
+          sphereCtx.stroke()
+        }
+      }
+
+      // Horizon circle — glow + crisp
       sphereCtx.beginPath()
       sphereCtx.arc(cx, cy, R, 0, Math.PI * 2)
+      sphereCtx.lineWidth = 3
+      sphereCtx.strokeStyle = `rgba(0,200,255,${(0.10 * flicker).toFixed(3)})`
+      sphereCtx.stroke()
+
+      sphereCtx.beginPath()
+      sphereCtx.arc(cx, cy, R, 0, Math.PI * 2)
+      sphereCtx.lineWidth = 0.8
+      sphereCtx.strokeStyle = `rgba(100,225,255,${(0.45 * flicker).toFixed(3)})`
       sphereCtx.stroke()
     }
 
-    // ---- ink mask ----
-    let zonePoints: { x: number; y: number }[][] = []
+    // ---- ink mask for logo hit-testing ----
     let inkMask: { data: Uint8Array; w: number; h: number; mScale: number } | null = null
     let logoBox: DOMRect | null = null
 
     function sampleLogoPoints() {
       const rect = logo.getBoundingClientRect()
-      if (!rect.width || !rect.height) { zonePoints = []; logoBox = null; inkMask = null; return }
+      if (!rect.width || !rect.height) { logoBox = null; inkMask = null; return }
       logoBox = rect
       const cs = getComputedStyle(logo)
       const fontSize = parseFloat(cs.fontSize)
@@ -224,20 +270,14 @@ export default function HeroCanvas() {
       const mw = Math.ceil(rect.width / mScale) + 2
       const mh = Math.ceil(rect.height / mScale) + 2
       const mask = new Uint8Array(mw * mh)
-      const zones: { x: number; y: number }[][] = Array.from({ length: WORD.length }, () => [])
-      const step = 3
       const xStart = padX * scale
       const xEnd   = (padX + rect.width) * scale
-      const textW  = Math.max(1, xEnd - xStart)
+      const step = 3
       for (let y = 0; y < oh; y += step) {
-        for (let x = 0; x < ow; x += step) {
-          const idx = (y * ow + x) * 4
-          if (img[idx] > 160) {
-            const u = (x - xStart) / textW
-            const zi = Math.max(0, Math.min(WORD.length - 1, Math.floor(u * WORD.length)))
+        for (let x = xStart; x < xEnd; x += step) {
+          if (img[(y * ow + x) * 4] > 160) {
             const sx = rect.left - padX + x / scale
             const sy = rect.top  - padY + y / scale
-            zones[zi].push({ x: sx, y: sy })
             const mx = Math.floor((sx - rect.left) / mScale)
             const my = Math.floor((sy - rect.top)  / mScale)
             for (let dy = -1; dy <= 1; dy++) {
@@ -249,7 +289,6 @@ export default function HeroCanvas() {
           }
         }
       }
-      zonePoints = zones
       inkMask = { data: mask, w: mw, h: mh, mScale }
     }
 
@@ -272,41 +311,52 @@ export default function HeroCanvas() {
       return inkMask.data[my * inkMask.w + mx] === 1
     }
 
-    // ---- particles ----
+    // ---- cursor-trailing particles ----
     const particles: Particle[] = []
-    const MAX_PARTICLES = 2400
+    const MAX_PARTICLES = 2000
 
     function fadeFlowCanvas() {
       flowCtx.globalCompositeOperation = 'destination-out'
-      // Faster fade = shorter trails, more smoke-like
-      flowCtx.fillStyle = 'rgba(0,0,0,0.11)'
+      // Moderate fade — trails dissolve in ~8-10 frames
+      flowCtx.fillStyle = 'rgba(0,0,0,0.13)'
       flowCtx.fillRect(0, 0, W, H)
       flowCtx.globalCompositeOperation = 'source-over'
     }
 
-    function spawnFromZone(zi: number, count: number) {
-      const pts = zonePoints[zi]
-      if (!pts || !pts.length || !logoBox) return
+    function spawnTrailParticles(dt: number) {
+      if (!cursorOnInk() || !logoBox) return
+
+      const u = Math.max(0, Math.min(1, (mouse.x - logoBox.left) / logoBox.width))
+      const col = pickBlendedColor(u)
+
+      const baseRate = 26
+      const count = Math.max(1, Math.floor(baseRate * (dt / 16.7)))
+
       for (let i = 0; i < count; i++) {
         if (particles.length >= MAX_PARTICLES) break
-        const p = pts[(Math.random() * pts.length) | 0]
-        const u = Math.max(0, Math.min(1, (p.x - logoBox.left) / logoBox.width))
-        const col = pickBlendedColor(u)
-        // Mostly upward with lateral spread — aurora/smoke drift
-        const lateralSpread = (Math.random() - 0.5) * 1.2
-        const upSpeed = 0.4 + Math.random() * 0.9
-        const life = 900 + Math.random() * 700
+
+        // Small spread around cursor so trail has width, not just a point
+        const spread = 5
+        const ox = (Math.random() - 0.5) * spread
+        const oy = (Math.random() - 0.5) * spread
+
+        // Particles inherit a fraction of cursor velocity — cursor moves ahead,
+        // particles lag behind, naturally forming a trail
+        const trailFrac = 0.15 + Math.random() * 0.20
+        const life = 320 + Math.random() * 280
+
         particles.push({
-          x: p.x, y: p.y,
-          vx: lateralSpread,
-          vy: -upSpeed,
-          life, maxLife: life,
-          // Large soft blobs — many overlapping = aurora glow
-          size: 10 + Math.random() * 18,
+          x: mouse.x + ox,
+          y: mouse.y + oy,
+          vx: mouse.vx * trailFrac,
+          vy: mouse.vy * trailFrac,
+          life,
+          maxLife: life,
+          size: 11 + Math.random() * 15,
           r: col.r, g: col.g, b: col.b,
-          alpha0: 0.055 + Math.random() * 0.065,
+          alpha0: 0.10 + Math.random() * 0.10,
           wob: Math.random() * Math.PI * 2,
-          wobSpeed: 0.0012 + Math.random() * 0.0016,
+          wobSpeed: 0.0014 + Math.random() * 0.0010,
         })
       }
     }
@@ -314,38 +364,34 @@ export default function HeroCanvas() {
     function updateParticles(dt: number) {
       fadeFlowCanvas()
       flowCtx.globalCompositeOperation = 'source-over'
+
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i]
         p.life -= dt
         if (p.life <= 0) { particles.splice(i, 1); continue }
 
-        // Gentle lateral wobble for organic flow
+        // Very gentle lateral wobble for organic softness
         p.wob += p.wobSpeed * dt
-        p.vx += Math.cos(p.wob) * 0.018
-        // Sustained upward buoyancy
-        p.vy -= 0.022
+        p.vx += Math.cos(p.wob) * 0.006
 
-        // Light drag — let them float freely
-        p.vx *= 0.96
-        p.vy *= 0.97
+        // Heavy drag — trail dissipates within ~15 frames
+        p.vx *= 0.90
+        p.vy *= 0.90
 
-        const sp = Math.hypot(p.vx, p.vy)
-        const maxSp = 2.8
-        if (sp > maxSp) { p.vx *= maxSp / sp; p.vy *= maxSp / sp }
-
-        p.x += p.vx * dt * 0.06
-        p.y += p.vy * dt * 0.06
+        p.x += p.vx * dt * 0.07
+        p.y += p.vy * dt * 0.07
 
         const lifeT = p.life / p.maxLife
-        // Quick fade-in, long fade-out for smoke puff feel
-        const fadeIn = Math.min(1, (1 - lifeT) * 6)
+        // Quick fade-in (appears instantly), smooth fade-out
+        const fadeIn = Math.min(1, (1 - lifeT) * 10)
         const a = p.alpha0 * lifeT * fadeIn
-        // Grow slightly as they rise (smoke expansion)
-        const rad = p.size * (1 + (1 - lifeT) * 1.2)
+
+        // Slight expansion as particle dissolves
+        const rad = p.size * (1 + (1 - lifeT) * 0.5)
 
         const grad = flowCtx.createRadialGradient(p.x, p.y, 0, p.x, p.y, rad)
         grad.addColorStop(0,    `rgba(${p.r},${p.g},${p.b},${a.toFixed(3)})`)
-        grad.addColorStop(0.45, `rgba(${p.r},${p.g},${p.b},${(a * 0.4).toFixed(3)})`)
+        grad.addColorStop(0.40, `rgba(${p.r},${p.g},${p.b},${(a * 0.38).toFixed(3)})`)
         grad.addColorStop(1,    `rgba(${p.r},${p.g},${p.b},0)`)
         flowCtx.fillStyle = grad
         flowCtx.beginPath()
@@ -354,18 +400,7 @@ export default function HeroCanvas() {
       }
     }
 
-    function spawnIfOverInk(dt: number) {
-      if (!cursorOnInk()) return
-      const u = Math.max(0, Math.min(0.9999, (mouse.x - logoBox!.left) / logoBox!.width))
-      const zi = Math.floor(u * WORD.length)
-      // Higher burst rate for dense smoke/aurora response
-      const baseRate = 28
-      const spawn = Math.max(2, Math.floor(baseRate * (dt / 16.7)))
-      spawnFromZone(zi, spawn)
-      if (zi > 0)               spawnFromZone(zi - 1, Math.ceil(spawn * 0.5))
-      if (zi < WORD.length - 1) spawnFromZone(zi + 1, Math.ceil(spawn * 0.5))
-    }
-
+    // ---- main loop ----
     let last = performance.now()
     let rafId = 0
     function frame(now: number) {
@@ -374,7 +409,7 @@ export default function HeroCanvas() {
       drawRings(now)
       drawSphere(now)
       animateLogo(now)
-      spawnIfOverInk(dt)
+      spawnTrailParticles(dt)
       updateParticles(dt)
       rafId = requestAnimationFrame(frame)
     }
@@ -391,8 +426,8 @@ export default function HeroCanvas() {
 
   return (
     <main style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden' }}>
-      <canvas ref={ringsRef}  id="rings"  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 }} />
-      <canvas ref={sphereRef} id="sphere" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 2 }} />
+      <canvas ref={ringsRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 }} />
+      <canvas ref={sphereRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 2 }} />
       <div
         style={{
           position: 'absolute',
@@ -424,7 +459,8 @@ export default function HeroCanvas() {
           NanoSphere
         </div>
       </div>
-      <canvas ref={flowRef} id="flow" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 4, mixBlendMode: 'multiply' }} />
+      {/* normal blend preserves vivid electric blue/red on the yellow background */}
+      <canvas ref={flowRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 4 }} />
     </main>
   )
 }
