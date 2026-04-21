@@ -132,7 +132,7 @@ export default function HeroCanvas() {
         <div
           ref={logoRef}
           style={{
-            fontFamily: 'var(--font-italiana), serif',
+            fontFamily: "'Bitcount Grid Double', var(--font-italiana), serif",
             fontWeight: 400,
             fontSize: 'clamp(72px, 12vw, 188px)',
             letterSpacing: '0.04em',
