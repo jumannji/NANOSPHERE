@@ -134,8 +134,8 @@ export default function HeroCanvas() {
           style={{
             fontFamily: "var(--font-press-start), var(--font-italiana), serif",
             fontWeight: 400,
-            fontSize: 'clamp(72px, 12vw, 188px)',
-            letterSpacing: '0.04em',
+            fontSize: 'clamp(12px, 8vw, 100px)',
+            letterSpacing: '0',
             color: 'var(--logo-ink)',
             whiteSpace: 'nowrap',
             userSelect: 'none',
