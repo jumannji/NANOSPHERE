@@ -279,6 +279,8 @@ nav {
     font-size: 9px;
     letter-spacing: 0.18em;
   }
+  /* Corner brackets overlap the nav at tablet/mobile widths — hide them */
+  .corner { display: none; }
 }
 
 /* Mobile — 480px (covers iPhone 14 at 390px and similar) */
