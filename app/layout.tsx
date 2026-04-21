@@ -24,6 +24,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${cinzel.variable} ${italiana.variable}`}>
+      <head>
+        {/* Runs synchronously before paint — no theme flash */}
+        <script dangerouslySetInnerHTML={{ __html: `if(Math.random()<.5)document.documentElement.dataset.theme='2'` }} />
+      </head>
       <body>{children}</body>
     </html>
   )

@@ -46,6 +46,9 @@ export default function HeroCanvas() {
     const ringsCtx  = ringsCanvas.getContext('2d')!
     const sphereCtx = sphereCanvas.getContext('2d')!
 
+    const sphereRgb = getComputedStyle(document.documentElement)
+      .getPropertyValue('--sphere-rgb').trim() || '18,18,20'
+
     let W = 0, H = 0, DPR = 1
     function resize() {
       DPR = Math.min(window.devicePixelRatio || 1, 2)
@@ -96,11 +99,11 @@ export default function HeroCanvas() {
         for (let i = 0; i < proj_.length; i++) {
           const a = proj_[i], b = proj_[(i + 1) % proj_.length]
           const op = 0.03 + ((a.z + b.z) * 0.5 + 1) * 0.5 * 0.22
-          sphereCtx.strokeStyle = `rgba(18,18,20,${op.toFixed(3)})`
+          sphereCtx.strokeStyle = `rgba(${sphereRgb},${op.toFixed(3)})`
           sphereCtx.beginPath(); sphereCtx.moveTo(a.x, a.y); sphereCtx.lineTo(b.x, b.y); sphereCtx.stroke()
         }
       }
-      sphereCtx.strokeStyle = 'rgba(18,18,20,0.32)'
+      sphereCtx.strokeStyle = `rgba(${sphereRgb},0.32)`
       sphereCtx.beginPath(); sphereCtx.arc(cx, cy, R, 0, Math.PI * 2); sphereCtx.stroke()
     }
 
@@ -133,7 +136,7 @@ export default function HeroCanvas() {
             fontWeight: 400,
             fontSize: 'clamp(72px, 12vw, 188px)',
             letterSpacing: '0.04em',
-            color: '#ae3319',
+            color: 'var(--logo-ink)',
             whiteSpace: 'nowrap',
             userSelect: 'none',
             willChange: 'transform',

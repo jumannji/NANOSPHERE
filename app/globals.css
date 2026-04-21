@@ -7,8 +7,17 @@
 :root {
   --bg: rgb(247, 197, 0);
   --ink: #0f0f10;
+  --nav-ink: #ae3319;
+  --logo-ink: #ae3319;
+  --sphere-rgb: 18,18,20;
   --pill-red: #b33a3a;
   --pill-blue: #2f5bb0;
+}
+[data-theme="2"] {
+  --bg: #c8fffb;
+  --nav-ink: #080100;
+  --logo-ink: #080100;
+  --sphere-rgb: 8,1,0;
 }
 
 html, body {
@@ -47,22 +56,22 @@ nav {
 }
 
 .nav-links a {
-  color: #121214;
+  color: var(--nav-ink);
   text-decoration: none;
   transition: color 350ms ease, border-color 350ms ease;
   position: relative;
   padding: 2px 0;
 }
-.nav-links a:hover { color: #000; }
+.nav-links a:hover { color: var(--nav-ink); opacity: 0.7; }
 
 .nav-links a.pill {
   position: relative;
   padding: 9px 22px;
-  border: 0.5px solid #121214;
+  border: 0.5px solid var(--nav-ink);
   border-radius: 999px;
   overflow: hidden;
   isolation: isolate;
-  color: #121214;
+  color: var(--nav-ink);
 }
 .nav-links a.pill .pill-label {
   position: relative;
@@ -92,7 +101,8 @@ nav {
 .nav-links a.pill:hover::before,
 .nav-links a.pill:hover::after { transform: scaleX(1); }
 .nav-links a.pill:hover {
-  border-color: #000;
+  border-color: var(--nav-ink);
+  opacity: 1;
 }
 .nav-links a.pill:hover .pill-label { color: #fafafa; }
 
