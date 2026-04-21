@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Cinzel, Italiana, Press_Start_2P } from 'next/font/google'
 import './globals.css'
 
@@ -22,6 +22,11 @@ const pressStart2P = Press_Start_2P({
   variable: '--font-press-start',
   display: 'swap',
 })
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+}
 
 export const metadata: Metadata = {
   title: 'NanoSphere — Cultural Transmission',

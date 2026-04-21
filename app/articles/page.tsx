@@ -13,43 +13,24 @@ export default function ArticlesPage() {
       <CornerBrackets />
       <div className="vignette" />
 
-      <main
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-          paddingTop: 96,
-          paddingBottom: 72,
-          gap: 72,
-        }}
-      >
-        {/* Page title — same style as homepage logo */}
+      <main className="articles-main">
         <h1
           style={{
             fontFamily: 'var(--font-italiana), serif',
             fontWeight: 400,
-            fontSize: 'clamp(64px, 9vw, 140px)',
+            fontSize: 'clamp(40px, 9vw, 140px)',
             letterSpacing: '0.04em',
             color: 'var(--logo-ink)',
             userSelect: 'none',
             margin: 0,
             lineHeight: 1,
+            textAlign: 'center',
           }}
         >
           Articles
         </h1>
 
-        {/* 2×2 sphere grid */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, 1fr)',
-            gap: '64px 96px',
-            justifyItems: 'center',
-          }}
-        >
+        <div className="articles-grid">
           {ARTICLES.map(article => (
             <ArticleSphere
               key={article.slug}
