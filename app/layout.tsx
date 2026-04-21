@@ -26,7 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${cinzel.variable} ${italiana.variable}`}>
       <head>
         {/* Runs synchronously before paint — no theme flash */}
-        <script dangerouslySetInnerHTML={{ __html: `if(Math.random()<.5)document.documentElement.dataset.theme='2'` }} />
+        <script dangerouslySetInnerHTML={{ __html: `(function(){var h=location.pathname==='/';var s=sessionStorage.getItem('ns-theme');var t;if(h){t=Math.random()<.5?'2':'1';sessionStorage.setItem('ns-theme',t);}else{t=s||(Math.random()<.5?'2':'1');if(!s)sessionStorage.setItem('ns-theme',t);}if(t==='2')document.documentElement.dataset.theme='2';})()` }} />
       </head>
       <body>{children}</body>
     </html>
