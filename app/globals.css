@@ -19,6 +19,18 @@
   --logo-ink: #080100;
   --sphere-rgb: 8,1,0;
 }
+[data-theme="3"] {
+  --bg: rgb(255, 0, 0);
+  --nav-ink: #080100;
+  --logo-ink: #080100;
+  --sphere-rgb: 8,1,0;
+}
+[data-theme="4"] {
+  --bg: #319822;
+  --nav-ink: rgb(255, 54, 219);
+  --logo-ink: rgb(255, 54, 219);
+  --sphere-rgb: 255,54,219;
+}
 
 html, body {
   height: 100%;
