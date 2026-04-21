@@ -27,9 +27,9 @@
 }
 [data-theme="4"] {
   --bg: #319822;
-  --nav-ink: rgb(255, 54, 219);
+  --nav-ink: #080100;
   --logo-ink: rgb(255, 54, 219);
-  --sphere-rgb: 255,54,219;
+  --sphere-rgb: 8,1,0;
 }
 
 html, body {
