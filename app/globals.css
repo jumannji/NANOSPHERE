@@ -170,48 +170,28 @@ nav {
   white-space: nowrap;
 }
 
-/* ---------- Article cards ---------- */
-.article-card {
-  position: absolute;
-  width: 192px;
-  border: 0.5px solid var(--nav-ink);
-  border-top: 1.5px solid var(--nav-ink);
-  padding: 14px 16px 16px;
+/* ---------- Article spheres ---------- */
+.article-sphere-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
   text-decoration: none;
-  display: block;
   opacity: 0.72;
-  transition: opacity 320ms ease;
-  z-index: 2;
-  cursor: pointer;
+  transition: opacity 350ms ease, transform 350ms ease;
 }
-.article-card:hover { opacity: 1; }
-
-.article-card-title {
+.article-sphere-link:hover {
+  opacity: 1;
+  transform: scale(1.05);
+}
+.article-sphere-label {
   font-family: var(--font-cinzel), serif;
-  font-size: 8.5px;
+  font-size: 8px;
   font-weight: 400;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.28em;
   text-transform: uppercase;
   color: var(--nav-ink);
-  line-height: 1.6;
-}
-.article-card-date {
-  font-family: var(--font-cinzel), serif;
-  font-size: 7px;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  color: var(--ink);
-  opacity: 0.44;
-  margin-top: 9px;
-}
-.article-card-preview {
-  font-family: var(--font-cinzel), serif;
-  font-size: 7.5px;
-  letter-spacing: 0.1em;
-  color: var(--ink);
-  opacity: 0.58;
-  line-height: 1.9;
-  margin-top: 7px;
+  text-align: center;
 }
 
 /* ---------- Inner page content ---------- */
