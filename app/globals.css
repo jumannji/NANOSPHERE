@@ -122,6 +122,23 @@ nav {
 }
 .nav-links a.pill:hover .pill-label { color: #fafafa; }
 
+/* Inner-page nav: 3-col grid keeps sphere pinned at structural center */
+.nav-links--sphere {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  column-gap: 48px;
+  width: 100%;   /* fill the nav's content-box so the center column = 50% */
+}
+
+.nav-group-left,
+.nav-group-right {
+  display: flex;
+  align-items: center;
+  gap: 72px;
+}
+.nav-group-left  { justify-content: flex-end; }
+.nav-group-right { justify-content: flex-start; }
+
 .nav-sphere {
   display: inline-flex;
   align-items: center;
@@ -279,6 +296,8 @@ nav {
     font-size: 9px;
     letter-spacing: 0.18em;
   }
+  .nav-links--sphere { column-gap: 32px; }
+  .nav-group-left, .nav-group-right { gap: 36px; }
   /* Corner brackets overlap the nav at tablet/mobile widths — hide them */
   .corner { display: none; }
 }
@@ -330,6 +349,8 @@ nav {
     font-size: 7px;
     letter-spacing: 0.18em;
   }
+  .nav-links--sphere { column-gap: 16px; }
+  .nav-group-left, .nav-group-right { gap: 16px; }
 }
 
 /* Very small phones — 360px */

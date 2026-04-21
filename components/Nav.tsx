@@ -19,6 +19,7 @@ export default function Nav({ showSphere = false }: NavProps) {
     }
   }
 
+  // Homepage: plain flex row, no sphere
   if (!showSphere) {
     return (
       <nav>
@@ -34,39 +35,49 @@ export default function Nav({ showSphere = false }: NavProps) {
     )
   }
 
-  // Inner pages: links slide out from behind the sphere on first click
+  // Inner pages: 3-column grid — left-group | sphere | right-group
+  // The "auto" sphere column is always at the structural center;
+  // both 1fr columns are equal width so the sphere never drifts.
   const ease = 'cubic-bezier(0.22,1,0.36,1)'
 
   function leftLink(delay: number): React.CSSProperties {
     return {
-      opacity:        revealed ? 1 : 0,
-      transform:      revealed ? 'translateX(0)' : 'translateX(52px)',
-      transition:     `opacity 420ms ease ${delay}ms, transform 480ms ${ease} ${delay}ms`,
-      pointerEvents:  revealed ? 'auto' : 'none',
-      display:        'inline-flex',
+      opacity:       revealed ? 1 : 0,
+      // start translated rightward (behind the sphere), slide to natural position
+      transform:     revealed ? 'translateX(0)' : 'translateX(52px)',
+      transition:    `opacity 420ms ease ${delay}ms, transform 480ms ${ease} ${delay}ms`,
+      pointerEvents: revealed ? 'auto' : 'none',
+      display:       'inline-flex',
     }
   }
 
   function rightLink(delay: number): React.CSSProperties {
     return {
-      opacity:        revealed ? 1 : 0,
-      transform:      revealed ? 'translateX(0)' : 'translateX(-52px)',
-      transition:     `opacity 420ms ease ${delay}ms, transform 480ms ${ease} ${delay}ms`,
-      pointerEvents:  revealed ? 'auto' : 'none',
-      display:        'inline-flex',
+      opacity:       revealed ? 1 : 0,
+      // start translated leftward (behind the sphere), slide to natural position
+      transform:     revealed ? 'translateX(0)' : 'translateX(-52px)',
+      transition:    `opacity 420ms ease ${delay}ms, transform 480ms ${ease} ${delay}ms`,
+      pointerEvents: revealed ? 'auto' : 'none',
+      display:       'inline-flex',
     }
   }
 
   return (
     <nav>
-      <div className="nav-links">
-        <Link href="/articles"  style={leftLink(80)}>Articles</Link>
-        <Link href="/nanopill"  style={leftLink(20)}  className="pill">
-          <span className="pill-label">Nanopill</span>
-        </Link>
+      <div className="nav-links nav-links--sphere">
+        <div className="nav-group-left">
+          <Link href="/articles" style={leftLink(80)}>Articles</Link>
+          <Link href="/nanopill" style={leftLink(20)} className="pill">
+            <span className="pill-label">Nanopill</span>
+          </Link>
+        </div>
+
         <NavSphere onClick={handleSphereClick} />
-        <Link href="/products"  style={rightLink(20)}>Products</Link>
-        <Link href="/about"     style={rightLink(80)}>About</Link>
+
+        <div className="nav-group-right">
+          <Link href="/products" style={rightLink(20)}>Products</Link>
+          <Link href="/about"    style={rightLink(80)}>About</Link>
+        </div>
       </div>
     </nav>
   )
