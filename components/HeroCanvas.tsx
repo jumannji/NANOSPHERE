@@ -38,18 +38,23 @@ export default function HeroCanvas() {
   const ringsRef  = useRef<HTMLCanvasElement>(null)
   const sphereRef = useRef<HTMLCanvasElement>(null)
   const logoRef   = useRef<HTMLDivElement>(null)
+  const glitchRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
     const ringsCanvas  = ringsRef.current!
     const sphereCanvas = sphereRef.current!
+    const glitchCanvas = glitchRef.current!
     const logo         = logoRef.current!
     const ringsCtx  = ringsCanvas.getContext('2d')!
     const sphereCtx = sphereCanvas.getContext('2d')!
+    const glitchCtx = glitchCanvas.getContext('2d')!
 
     const sphereRgb = getComputedStyle(document.documentElement)
       .getPropertyValue('--sphere-rgb').trim() || '18,18,20'
 
     let W = 0, H = 0, DPR = 1
+    let lW = 0, lH = 0
+
     function resize() {
       DPR = Math.min(window.devicePixelRatio || 1, 2)
       W = window.innerWidth; H = window.innerHeight
@@ -59,9 +64,73 @@ export default function HeroCanvas() {
       }
       ringsCtx.setTransform(DPR, 0, 0, DPR, 0, 0)
       sphereCtx.setTransform(DPR, 0, 0, DPR, 0, 0)
+      resizeGlitch()
     }
+
+    function resizeGlitch() {
+      lW = logo.offsetWidth; lH = logo.offsetHeight
+      glitchCanvas.width  = Math.floor(lW * DPR)
+      glitchCanvas.height = Math.floor(lH * DPR)
+      glitchCanvas.style.width  = lW + 'px'
+      glitchCanvas.style.height = lH + 'px'
+      glitchCtx.setTransform(DPR, 0, 0, DPR, 0, 0)
+    }
+
     resize()
     window.addEventListener('resize', resize)
+
+    // Glitch state
+    let gHovering = false
+    let gIntensity = 0
+    let gSpread = 0
+    let gEnterX = 0.5
+    let gStripAge = 0
+    let gStripMs = 60
+    let gStrips: { y: number; h: number; dx: number }[] = []
+    let fontStr = ''
+    let bgColor = ''
+    let inkColor = ''
+
+    function regenStrips(I: number) {
+      const count = 2 + Math.floor(Math.random() * 4 * I + 1)
+      gStrips = []
+      for (let i = 0; i < count; i++) {
+        gStrips.push({
+          y:  Math.random() * lH,
+          h:  1 + Math.random() * Math.max(1, lH * 0.06 * I),
+          dx: (Math.random() - 0.5) * 18 * I,
+        })
+      }
+      gStripMs = 20 + Math.random() * (80 - I * 55)
+    }
+
+    document.fonts.ready.then(() => {
+      const cs = getComputedStyle(logo)
+      fontStr  = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`
+      bgColor  = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#f7c500'
+      inkColor = cs.color
+      resizeGlitch()
+    })
+
+    function onEnter(ex: number) {
+      const rect = logo.getBoundingClientRect()
+      gHovering = true
+      gEnterX   = Math.max(0, Math.min(1, (ex - rect.left) / rect.width))
+      gSpread   = 0
+    }
+
+    function onLeave() { gHovering = false }
+
+    function onMouseEnter(e: MouseEvent) { onEnter(e.clientX) }
+    function onMouseLeave() { onLeave() }
+    function onTouchStart(e: TouchEvent) {
+      onEnter(e.touches[0].clientX)
+      setTimeout(onLeave, 1400)
+    }
+
+    logo.addEventListener('mouseenter', onMouseEnter)
+    logo.addEventListener('mouseleave', onMouseLeave)
+    logo.addEventListener('touchstart', onTouchStart, { passive: true })
 
     function animateLogo(t: number) {
       const tx = Math.cos(t * 0.00025) * 5
@@ -107,13 +176,109 @@ export default function HeroCanvas() {
       sphereCtx.beginPath(); sphereCtx.arc(cx, cy, R, 0, Math.PI * 2); sphereCtx.stroke()
     }
 
+    function drawGlitch(dt: number) {
+      if (gHovering) {
+        gIntensity = Math.min(1, gIntensity + dt / 2000)
+        gSpread    = Math.min(1, gSpread    + dt / 450)
+      } else {
+        gIntensity = Math.max(0, gIntensity - dt / 380)
+      }
+
+      if (gIntensity < 0.004 || !fontStr) {
+        glitchCtx.clearRect(0, 0, lW, lH)
+        return
+      }
+
+      const I = gIntensity
+
+      // Spread zone: expand outward from entry point
+      const maxR  = Math.max(gEnterX, 1 - gEnterX) * lW
+      const curR  = gSpread * maxR
+      const sL    = Math.max(0, gEnterX * lW - curR)
+      const sR    = Math.min(lW, gEnterX * lW + curR)
+      const zoneW = sR - sL
+      if (zoneW < 1) { glitchCtx.clearRect(0, 0, lW, lH); return }
+
+      // Strip regen
+      gStripAge += dt
+      if (gStripAge >= gStripMs || gStrips.length === 0) {
+        gStripAge = 0
+        regenStrips(I)
+      }
+
+      glitchCtx.clearRect(0, 0, lW, lH)
+
+      const chromShift = Math.round(4 + I * 10)
+
+      // Chromatic aberration — red channel
+      glitchCtx.save()
+      glitchCtx.beginPath()
+      glitchCtx.rect(sL, 0, zoneW, lH)
+      glitchCtx.clip()
+      glitchCtx.globalAlpha = I * 0.52
+      glitchCtx.globalCompositeOperation = 'source-over'
+      glitchCtx.fillStyle = `rgba(255,0,60,1)`
+      glitchCtx.font = fontStr
+      glitchCtx.textBaseline = 'middle'
+      const textX = lW / 2
+      const textY = lH / 2
+      glitchCtx.textAlign = 'center'
+      glitchCtx.fillText('NanoSphere', textX - chromShift, textY)
+      glitchCtx.restore()
+
+      // Chromatic aberration — cyan channel
+      glitchCtx.save()
+      glitchCtx.beginPath()
+      glitchCtx.rect(sL, 0, zoneW, lH)
+      glitchCtx.clip()
+      glitchCtx.globalAlpha = I * 0.52
+      glitchCtx.fillStyle = `rgba(0,220,255,1)`
+      glitchCtx.font = fontStr
+      glitchCtx.textBaseline = 'middle'
+      glitchCtx.textAlign = 'center'
+      glitchCtx.fillText('NanoSphere', textX + chromShift, textY)
+      glitchCtx.restore()
+
+      // Scan-line tears
+      for (const strip of gStrips) {
+        const sy = strip.y, sh = strip.h, sdx = strip.dx
+        const clipL = sL, clipW = zoneW
+        if (clipW < 1) continue
+        glitchCtx.save()
+        glitchCtx.beginPath()
+        glitchCtx.rect(clipL, sy, clipW, sh)
+        glitchCtx.clip()
+        glitchCtx.globalAlpha = 1
+        glitchCtx.fillStyle = bgColor
+        glitchCtx.fillRect(clipL, sy, clipW, sh)
+        glitchCtx.fillStyle = inkColor
+        glitchCtx.font = fontStr
+        glitchCtx.textBaseline = 'middle'
+        glitchCtx.textAlign = 'center'
+        glitchCtx.fillText('NanoSphere', textX + sdx, textY)
+        glitchCtx.restore()
+      }
+
+      // Occasional flicker flash
+      if (Math.random() < I * 0.08) {
+        glitchCtx.save()
+        glitchCtx.beginPath()
+        glitchCtx.rect(sL, 0, zoneW, lH)
+        glitchCtx.clip()
+        glitchCtx.globalAlpha = Math.random() * 0.18 * I
+        glitchCtx.fillStyle = '#ffffff'
+        glitchCtx.fillRect(sL, 0, zoneW, lH)
+        glitchCtx.restore()
+      }
+    }
+
     let last = performance.now(), rafId = 0
     function frame(now: number) {
       const dt = Math.min(50, now - last); last = now
-      void dt
       drawRings(now)
       drawSphere(now)
       animateLogo(now)
+      drawGlitch(dt)
       rafId = requestAnimationFrame(frame)
     }
     rafId = requestAnimationFrame(frame)
@@ -121,6 +286,9 @@ export default function HeroCanvas() {
     return () => {
       cancelAnimationFrame(rafId)
       window.removeEventListener('resize', resize)
+      logo.removeEventListener('mouseenter', onMouseEnter)
+      logo.removeEventListener('mouseleave', onMouseLeave)
+      logo.removeEventListener('touchstart', onTouchStart)
     }
   }, [])
 
@@ -132,6 +300,7 @@ export default function HeroCanvas() {
         <div
           ref={logoRef}
           style={{
+            position: 'relative',
             fontFamily: "var(--font-press-start), var(--font-italiana), serif",
             fontWeight: 400,
             fontSize: 'clamp(12px, 8vw, 100px)',
@@ -146,6 +315,15 @@ export default function HeroCanvas() {
           }}
         >
           NanoSphere
+          <canvas
+            ref={glitchRef}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              pointerEvents: 'none',
+              zIndex: 1,
+            }}
+          />
         </div>
       </div>
     </main>
