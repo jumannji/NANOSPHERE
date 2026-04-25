@@ -1,9 +1,24 @@
 import { writeFileSync } from 'fs'
 
 const SEGS = 96
-const R    = 270   // sphere radius
-const CX   = 500   // sphere center x
-const CY   = 370   // sphere center y (upper portion of 1000x1000)
+const R    = 210   // sphere radius — smaller than text, reads as background element
+const CX   = 500
+const CY   = 500   // centered in the square
+
+// Slight rotation so latitude rings show as ellipses (matches how the sphere looks mid-animation)
+const AY = 0.38   // ~22° around y-axis
+const AX = 0.10   // ~6° tilt
+
+const cosAY = Math.cos(AY), sinAY = Math.sin(AY)
+const cosAX = Math.cos(AX), sinAX = Math.sin(AX)
+
+function proj(p) {
+  let x = p[0] * cosAY + p[2] * sinAY
+  let z = -p[0] * sinAY + p[2] * cosAY
+  let y = p[1] * cosAX - z * sinAX
+  z     = p[1] * sinAX + z * cosAX
+  return { x: CX + x * R, y: CY + y * R, z }
+}
 
 // Build same circle set as HeroCanvas
 const circles = []
@@ -30,30 +45,30 @@ for (const ly of [-0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75]) {
   circles.push(pts)
 }
 
-// Orthographic projection at t=0 (no rotation)
-function proj(p) {
-  return { x: CX + p[0] * R, y: CY + p[1] * R, z: p[2] }
-}
-
-// Generate line segments with depth-modulated opacity
+// Depth-modulated line segments — same formula as HeroCanvas
 const lines = []
 for (const pts of circles) {
   const projected = pts.map(proj)
   for (let i = 0; i < projected.length; i++) {
     const a = projected[i]
     const b = projected[(i + 1) % projected.length]
-    // Same formula as HeroCanvas: front-facing segments are brighter
     const op = 0.03 + ((a.z + b.z) * 0.5 + 1) * 0.5 * 0.22
     lines.push(
-      `<line x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}" x2="${b.x.toFixed(1)}" y2="${b.y.toFixed(1)}" stroke="white" stroke-opacity="${op.toFixed(3)}" stroke-width="1"/>`
+      `<line x1="${a.x.toFixed(2)}" y1="${a.y.toFixed(2)}" x2="${b.x.toFixed(2)}" y2="${b.y.toFixed(2)}" stroke="white" stroke-opacity="${op.toFixed(3)}" stroke-width="1.2"/>`
     )
   }
 }
 
 // Outer circle silhouette
 lines.push(
-  `<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="white" stroke-opacity="0.38" stroke-width="1"/>`
+  `<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="white" stroke-opacity="0.40" stroke-width="1.2"/>`
 )
+
+// Verify sphere fits within padding
+const pad = 80
+console.log(`Sphere bounds: x ${CX - R}–${CX + R}, y ${CY - R}–${CY + R}`)
+console.log(`Safe area:     x ${pad}–${1000 - pad}, y ${pad}–${1000 - pad}`)
+console.log(`Sphere fits:   ${CX - R >= pad && CX + R <= 1000 - pad && CY - R >= pad && CY + R <= 1000 - pad}`)
 
 const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1000" viewBox="0 0 1000 1000">
@@ -66,25 +81,24 @@ const svg = `<?xml version="1.0" encoding="UTF-8"?>
   <!-- Background -->
   <rect width="1000" height="1000" fill="#000000"/>
 
-  <!-- Wireframe sphere -->
+  <!-- Wireframe sphere (behind text) -->
   <g id="sphere">
 ${lines.map(l => '    ' + l).join('\n')}
   </g>
 
-  <!-- Wordmark -->
+  <!-- Wordmark centered over sphere, exactly as on the homepage -->
   <text
     x="500"
-    y="790"
+    y="500"
     text-anchor="middle"
     dominant-baseline="middle"
     font-family="'Press Start 2P', 'Courier New', monospace"
-    font-size="38"
-    letter-spacing="3"
+    font-size="54"
+    letter-spacing="2"
     fill="white"
-    opacity="0.92"
+    opacity="0.95"
   >NanoSphere</text>
 </svg>`
 
 writeFileSync('public/nanosphere-logo.svg', svg)
-console.log('Written to public/nanosphere-logo.svg')
-console.log(`Sphere segments: ${lines.length - 1} lines + 1 outer circle`)
+console.log(`Written: public/nanosphere-logo.svg  (${lines.length} sphere elements)`)
