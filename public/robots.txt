@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+
+# Block API routes — no crawler should ever call these
+Disallow: /api/
+
+# Block Next.js internals
+Disallow: /_next/
+
+# Block any future admin or dashboard routes
+Disallow: /admin/
+Disallow: /dashboard/
