@@ -90,6 +90,7 @@ export default function HeroCanvas() {
     let fontStr = ''
     let bgColor = ''
     let inkColor = ''
+    let gAutoStopId: ReturnType<typeof setTimeout> | null = null
 
     function regenStrips(I: number) {
       const count = 2 + Math.floor(Math.random() * 4 * I + 1)
@@ -114,12 +115,18 @@ export default function HeroCanvas() {
 
     function onEnter(ex: number) {
       const rect = logo.getBoundingClientRect()
+      if (gAutoStopId !== null) { clearTimeout(gAutoStopId); gAutoStopId = null }
       gHovering = true
       gEnterX   = Math.max(0, Math.min(1, (ex - rect.left) / rect.width))
       gSpread   = 0
+      gIntensity = 0
+      gAutoStopId = setTimeout(() => { gHovering = false; gAutoStopId = null }, 5000)
     }
 
-    function onLeave() { gHovering = false }
+    function onLeave() {
+      if (gAutoStopId !== null) { clearTimeout(gAutoStopId); gAutoStopId = null }
+      gHovering = false
+    }
 
     function onMouseEnter(e: MouseEvent) { onEnter(e.clientX) }
     function onMouseLeave() { onLeave() }
@@ -259,17 +266,6 @@ export default function HeroCanvas() {
         glitchCtx.restore()
       }
 
-      // Occasional flicker flash
-      if (Math.random() < I * 0.08) {
-        glitchCtx.save()
-        glitchCtx.beginPath()
-        glitchCtx.rect(sL, 0, zoneW, lH)
-        glitchCtx.clip()
-        glitchCtx.globalAlpha = Math.random() * 0.18 * I
-        glitchCtx.fillStyle = '#ffffff'
-        glitchCtx.fillRect(sL, 0, zoneW, lH)
-        glitchCtx.restore()
-      }
     }
 
     let last = performance.now(), rafId = 0
@@ -289,6 +285,7 @@ export default function HeroCanvas() {
       logo.removeEventListener('mouseenter', onMouseEnter)
       logo.removeEventListener('mouseleave', onMouseLeave)
       logo.removeEventListener('touchstart', onTouchStart)
+      if (gAutoStopId !== null) clearTimeout(gAutoStopId)
     }
   }, [])
 
