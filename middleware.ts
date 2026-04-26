@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { randomBytes } from 'crypto'
 
 // ─── Rate limiting ────────────────────────────────────────────────────────────
 // In-memory store per serverless instance.
@@ -39,7 +38,8 @@ export function middleware(req: NextRequest) {
   // Generate a fresh nonce for every page request.
   // Next.js reads x-nonce from the forwarded request headers and automatically
   // stamps it on all <script> tags it injects (RSC streaming scripts, chunks, etc.).
-  const nonce = randomBytes(16).toString('base64')
+  // Web Crypto API — available in Edge Runtime (Node.js crypto is not).
+  const nonce = btoa(String.fromCharCode.apply(null, Array.from(crypto.getRandomValues(new Uint8Array(16)))))
 
   const csp = [
     "default-src 'self'",
