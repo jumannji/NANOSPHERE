@@ -16,9 +16,9 @@ export default function ArticlesPage() {
       <main className="articles-main">
         <h1
           style={{
-            fontFamily: 'var(--font-italiana), serif',
+            fontFamily: 'var(--font-press-start), monospace',
             fontWeight: 400,
-            fontSize: 'clamp(40px, 9vw, 140px)',
+            fontSize: 'clamp(18px, 4vw, 56px)',
             letterSpacing: '0.04em',
             color: 'var(--logo-ink)',
             userSelect: 'none',

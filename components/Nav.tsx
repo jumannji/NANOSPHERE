@@ -25,10 +25,10 @@ export default function Nav({ showSphere = false }: NavProps) {
       <nav>
         <div className="nav-links">
           <Link href="/articles">Articles</Link>
-          <Link href="/nanopill" className="pill">
-            <span className="pill-label">Nanopill</span>
+          <Link href="/nanobazaar" className="pill">
+            <span className="pill-label">NanoBazaar</span>
           </Link>
-          <Link href="/products">Products</Link>
+          <Link href="/nanoweb">NanoWeb</Link>
           <Link href="/about">About</Link>
         </div>
       </nav>
@@ -67,16 +67,16 @@ export default function Nav({ showSphere = false }: NavProps) {
       <div className="nav-links nav-links--sphere">
         <div className="nav-group-left">
           <Link href="/articles" style={leftLink(80)}>Articles</Link>
-          <Link href="/nanopill" style={leftLink(20)} className="pill">
-            <span className="pill-label">Nanopill</span>
+          <Link href="/nanobazaar" style={leftLink(20)} className="pill">
+            <span className="pill-label">NanoBazaar</span>
           </Link>
         </div>
 
         <NavSphere onClick={handleSphereClick} />
 
         <div className="nav-group-right">
-          <Link href="/products" style={rightLink(20)}>Products</Link>
-          <Link href="/about"    style={rightLink(80)}>About</Link>
+          <Link href="/nanoweb" style={rightLink(20)}>NanoWeb</Link>
+          <Link href="/about"   style={rightLink(80)}>About</Link>
         </div>
       </div>
     </nav>
