@@ -427,9 +427,7 @@ nav {
   padding: 48px 24px 64px;
 }
 
-.bz-hero-sphere {
-  filter: drop-shadow(0 0 28px rgba(247,197,0,0.28));
-}
+.bz-hero-sphere {}
 
 .bz-title {
   font-family: var(--font-press-start), monospace;
@@ -542,9 +540,7 @@ nav {
   gap: 14px;
 }
 
-.bz-stall-sphere {
-  filter: drop-shadow(0 0 14px rgba(247,197,0,0.32));
-}
+.bz-stall-sphere {}
 
 .bz-stall-name {
   font-family: var(--font-press-start), monospace;

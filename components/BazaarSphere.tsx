@@ -27,7 +27,6 @@ const CIRCLES = (() => {
   return arr
 })()
 
-// Colors to cycle through: yellow, mint, red, green, electric blue, magenta
 const PALETTE: [number, number, number][] = [
   [247, 197,   0],
   [200, 255, 251],
@@ -39,6 +38,30 @@ const PALETTE: [number, number, number][] = [
 
 function lerp(a: number, b: number, t: number) { return a + (b - a) * t }
 
+// ── Fix 4: shared rAF loop ────────────────────────────────────────────────────
+// All BazaarSphere instances draw inside one requestAnimationFrame tick instead
+// of N independent loops competing for the same vsync budget.
+type DrawFn = (t: number) => void
+const registry = new Set<DrawFn>()
+let sharedRaf = 0
+
+function sharedLoop(t: number) {
+  registry.forEach(fn => fn(t))
+  sharedRaf = requestAnimationFrame(sharedLoop)
+}
+function register(fn: DrawFn) {
+  registry.add(fn)
+  if (registry.size === 1) sharedRaf = requestAnimationFrame(sharedLoop)
+}
+function unregister(fn: DrawFn) {
+  registry.delete(fn)
+  if (registry.size === 0) { cancelAnimationFrame(sharedRaf); sharedRaf = 0 }
+}
+
+// ── Fix 1: depth-bucket count ─────────────────────────────────────────────────
+// 16 buckets → at most 16 stroke() calls per sphere per frame instead of 1,152.
+const N_BUCKETS = 16
+
 interface Props { size?: number }
 
 export default function BazaarSphere({ size = 200 }: Props) {
@@ -46,15 +69,52 @@ export default function BazaarSphere({ size = 200 }: Props) {
 
   useEffect(() => {
     const canvas = canvasRef.current!
-    const ctx = canvas.getContext('2d')!
-    const DPR = Math.min(window.devicePixelRatio || 1, 2)
+    const ctx    = canvas.getContext('2d')!
+    const DPR    = Math.min(window.devicePixelRatio || 1, 2)
     canvas.width  = size * DPR
     canvas.height = size * DPR
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0)
 
-    const cx = size / 2, cy = size / 2, R = size * 0.43
+    const cx       = size / 2, cy = size / 2, R = size * 0.43
+    const lineW    = size < 100 ? 0.6 : 0.75
+    const ringW    = size < 100 ? 0.5 : 0.7
+    const shadowSz = size * 0.055
 
-    let rafId = 0
+    // ── Fix 3a: pre-allocated projected-point buffers ─────────────────────────
+    // Objects created once at mount; filled in-place each frame — zero per-frame
+    // heap allocation for projected points.
+    const projBuf: { x: number; y: number; z: number }[][] =
+      CIRCLES.map(c => c.pts.map(() => ({ x: 0, y: 0, z: 0 })))
+
+    // ── Fix 3b: pre-allocated per-bucket segment arrays ───────────────────────
+    // Cleared with .length = 0 each frame (keeps underlying memory, no re-alloc
+    // after the first few frames once the arrays reach their steady-state size).
+    const bfx: number[][] = Array.from({ length: N_BUCKETS }, () => [])
+    const bfy: number[][] = Array.from({ length: N_BUCKETS }, () => [])
+    const btx: number[][] = Array.from({ length: N_BUCKETS }, () => [])
+    const bty: number[][] = Array.from({ length: N_BUCKETS }, () => [])
+
+    // Rotation state — mutable locals updated each frame, captured by projectAll
+    let cosY = 1, sinY = 0, cosX = 1, sinX = 0
+
+    // Projection defined once per instance (not re-created inside frame each tick)
+    function projectAll() {
+      for (let ci = 0; ci < CIRCLES.length; ci++) {
+        const { pts } = CIRCLES[ci]
+        const buf     = projBuf[ci]
+        for (let s = 0; s < pts.length; s++) {
+          const [px, py, pz] = pts[s]
+          const rx  = px * cosY + pz * sinY
+          let   rz  = -px * sinY + pz * cosY
+          const ry  = py * cosX - rz * sinX
+          rz        = py * sinX + rz * cosX
+          const out = buf[s]
+          out.x = cx + rx * R
+          out.y = cy + ry * R
+          out.z = rz
+        }
+      }
+    }
 
     function frame(t: number) {
       ctx.clearRect(0, 0, size, size)
@@ -62,69 +122,75 @@ export default function BazaarSphere({ size = 200 }: Props) {
       // Rotation
       const ay = t * 0.00016
       const ax = Math.sin(t * 0.000093) * 0.32
-      const cosY = Math.cos(ay), sinY = Math.sin(ay)
-      const cosX = Math.cos(ax), sinX = Math.sin(ax)
+      cosY = Math.cos(ay); sinY = Math.sin(ay)
+      cosX = Math.cos(ax); sinX = Math.sin(ax)
+      projectAll()
 
-      function proj(p: [number, number, number]) {
-        let x = p[0] * cosY + p[2] * sinY
-        let z = -p[0] * sinY + p[2] * cosY
-        let y = p[1] * cosX - z * sinX
-        z = p[1] * sinX + z * cosX
-        return { x: cx + x * R, y: cy + y * R, z }
+      // Color interpolation — identical to original
+      const ct      = (t * 0.00085) % PALETTE.length
+      const pi      = Math.floor(ct) % PALETTE.length
+      const pn      = (pi + 1) % PALETTE.length
+      const frac    = ct - Math.floor(ct)
+      const ease    = frac < 0.5 ? 2 * frac * frac : 1 - 2 * (1 - frac) * (1 - frac)
+      const cr      = lerp(PALETTE[pi][0], PALETTE[pn][0], ease)
+      const cg      = lerp(PALETTE[pi][1], PALETTE[pn][1], ease)
+      const cb      = lerp(PALETTE[pi][2], PALETTE[pn][2], ease)
+      const flicker = 0.88 + 0.12 * Math.sin(t * 0.047) * Math.cos(t * 0.031)
+      const r = Math.round(cr), g = Math.round(cg), b = Math.round(cb)
+
+      // ── Fix 3b: clear buckets by resetting length (no new array allocations) ─
+      for (let bk = 0; bk < N_BUCKETS; bk++) {
+        bfx[bk].length = 0; bfy[bk].length = 0
+        btx[bk].length = 0; bty[bk].length = 0
       }
 
-      // Color cycling — smooth interpolation between palette entries
-      const colorT = (t * 0.00085) % PALETTE.length
-      const ci = Math.floor(colorT) % PALETTE.length
-      const cn = (ci + 1) % PALETTE.length
-      const frac = colorT - Math.floor(colorT)
-      const ease = frac < 0.5 ? 2 * frac * frac : 1 - 2 * (1 - frac) * (1 - frac)
-
-      const cr = lerp(PALETTE[ci][0], PALETTE[cn][0], ease)
-      const cg = lerp(PALETTE[ci][1], PALETTE[cn][1], ease)
-      const cb = lerp(PALETTE[ci][2], PALETTE[cn][2], ease)
-
-      // Subtle intensity flicker for electric feel
-      const flicker = 0.88 + 0.12 * Math.sin(t * 0.047) * Math.cos(t * 0.031)
-
-      const r = Math.round(cr)
-      const g = Math.round(cg)
-      const b = Math.round(cb)
-
-      // Glow via shadowBlur
-      ctx.shadowColor = `rgba(${r},${g},${b},0.85)`
-      ctx.shadowBlur = size * 0.055
-
-      ctx.lineWidth = size < 100 ? 0.6 : 0.75
-
-      for (const c of CIRCLES) {
-        const pts = c.pts.map(proj)
-        for (let i = 0; i < pts.length; i++) {
-          const a = pts[i], bpt = pts[(i + 1) % pts.length]
+      // ── Fix 1: bucket every segment by depth ──────────────────────────────
+      for (let ci = 0; ci < CIRCLES.length; ci++) {
+        const buf = projBuf[ci]
+        const len = buf.length
+        for (let i = 0; i < len; i++) {
+          const a   = buf[i]
+          const bpt = buf[(i + 1) % len]
           const depth = ((a.z + bpt.z) * 0.5 + 1) * 0.5
-          const op = (0.08 + depth * 0.88) * flicker
-          ctx.strokeStyle = `rgba(${r},${g},${b},${op.toFixed(3)})`
-          ctx.beginPath()
-          ctx.moveTo(a.x, a.y)
-          ctx.lineTo(bpt.x, bpt.y)
-          ctx.stroke()
+          const bk    = Math.min(N_BUCKETS - 1, depth * N_BUCKETS | 0)
+          bfx[bk].push(a.x);   bfy[bk].push(a.y)
+          btx[bk].push(bpt.x); bty[bk].push(bpt.y)
         }
       }
 
-      // Outer ring
-      ctx.strokeStyle = `rgba(${r},${g},${b},${(0.38 * flicker).toFixed(3)})`
-      ctx.lineWidth = size < 100 ? 0.5 : 0.7
+      // ── Fix 1 + 3c: one stroke() per bucket, ~16 rgba strings per frame ────
+      // shadowBlur is computed 16× per sphere per frame instead of 1,152×.
+      ctx.shadowColor = `rgba(${r},${g},${b},0.85)`
+      ctx.shadowBlur  = shadowSz
+      ctx.lineWidth   = lineW
+
+      for (let bk = 0; bk < N_BUCKETS; bk++) {
+        const count = bfx[bk].length
+        if (count === 0) continue
+        const depthFrac = (bk + 0.5) / N_BUCKETS
+        const op = (0.08 + depthFrac * 0.88) * flicker
+        ctx.strokeStyle = `rgba(${r},${g},${b},${op.toFixed(2)})`
+        ctx.beginPath()
+        for (let j = 0; j < count; j++) {
+          ctx.moveTo(bfx[bk][j], bfy[bk][j])
+          ctx.lineTo(btx[bk][j], bty[bk][j])
+        }
+        ctx.stroke()
+      }
+
+      // Outer equator ring
+      ctx.strokeStyle = `rgba(${r},${g},${b},${(0.38 * flicker).toFixed(2)})`
+      ctx.lineWidth   = ringW
       ctx.beginPath()
       ctx.arc(cx, cy, R, 0, Math.PI * 2)
       ctx.stroke()
 
       ctx.shadowBlur = 0
-
-      rafId = requestAnimationFrame(frame)
     }
 
-    rafId = requestAnimationFrame(frame)
-    return () => cancelAnimationFrame(rafId)
+    // ── Fix 4: join the shared loop instead of starting a new rAF ─────────────
+    register(frame)
+    return () => unregister(frame)
   }, [size])
 
   return (
