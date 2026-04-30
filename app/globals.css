@@ -366,3 +366,327 @@ nav {
     max-width: 160px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   NANOBAZAAR — own theme, always active on /nanobazaar
+   ═══════════════════════════════════════════════════════════ */
+
+[data-theme="bazaar"] {
+  --bg:        #080808;
+  --ink:       #e0e0e0;
+  --nav-ink:   #f7c500;
+  --logo-ink:  #f7c500;
+  --sphere-rgb: 247,197,0;
+  --pill-red:  #ff2020;
+  --pill-blue: #00aaff;
+}
+
+/* Nav overrides for dark background */
+[data-theme="bazaar"] nav {
+  border-bottom-color: rgba(247,197,0,0.14);
+  background: rgba(8,8,8,0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+[data-theme="bazaar"] .corner::before,
+[data-theme="bazaar"] .corner::after {
+  background: rgba(247,197,0,0.18);
+}
+
+/* Pixel scanline overlay */
+.bz-scanlines {
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 3px,
+    rgba(0,0,0,0.055) 3px,
+    rgba(0,0,0,0.055) 4px
+  );
+  pointer-events: none;
+  z-index: 200;
+}
+
+/* ── Layout ─────────────────────────────────────────────── */
+.bz-main {
+  position: relative;
+  z-index: 1;
+  padding-top: 118px;
+  padding-bottom: 96px;
+  min-height: 100vh;
+  background: #080808;
+}
+
+/* ── Hero ───────────────────────────────────────────────── */
+.bz-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  padding: 48px 24px 64px;
+}
+
+.bz-hero-sphere {
+  filter: drop-shadow(0 0 28px rgba(247,197,0,0.28));
+}
+
+.bz-title {
+  font-family: var(--font-press-start), monospace;
+  font-size: clamp(18px, 3.8vw, 44px);
+  font-weight: 400;
+  color: #f7c500;
+  text-shadow:
+    0 0 8px  rgba(247,197,0,0.9),
+    0 0 20px rgba(247,197,0,0.45),
+    0 0 44px rgba(247,197,0,0.2);
+  text-align: center;
+  letter-spacing: 0.04em;
+  margin: 0;
+}
+
+/* ── Countdown ──────────────────────────────────────────── */
+.bz-countdown {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.bz-cd-label {
+  font-family: var(--font-press-start), monospace;
+  font-size: 7px;
+  color: rgba(247,197,0,0.55);
+  text-align: center;
+  letter-spacing: 0.06em;
+  line-height: 1.9;
+  margin: 0;
+}
+
+.bz-cd-timer {
+  font-family: var(--font-press-start), monospace;
+  font-size: clamp(18px, 3.2vw, 30px);
+  font-weight: 400;
+  color: #f7c500;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  text-shadow: 0 0 10px rgba(247,197,0,0.65);
+}
+
+.bz-cd-unit {
+  font-size: 0.45em;
+  opacity: 0.6;
+  margin-left: 2px;
+}
+
+.bz-cd-sep {
+  opacity: 0.45;
+  animation: bz-blink 1s step-end infinite;
+}
+
+@keyframes bz-blink {
+  0%, 100% { opacity: 0.45; }
+  50%       { opacity: 0.1;  }
+}
+
+/* ── Market stalls ──────────────────────────────────────── */
+.bz-market {
+  padding: 0 32px 80px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.bz-stall-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 36px;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.bz-stall {
+  width: 232px;
+  background: #0c0c0c;
+  border: 2px solid #f7c500;
+  box-shadow:
+    0 0 0 1px #080808,
+    0 0 18px rgba(247,197,0,0.12),
+    inset 0 0 40px rgba(0,0,0,0.55);
+  overflow: hidden;
+  image-rendering: pixelated;
+  transition: box-shadow 300ms ease;
+}
+.bz-stall:hover {
+  box-shadow:
+    0 0 0 1px #080808,
+    0 0 28px rgba(247,197,0,0.28),
+    inset 0 0 40px rgba(0,0,0,0.55);
+}
+
+/* Slight irregular angles — market feel */
+.bz-stall--0 { transform: rotate(-1.4deg); margin-top: 24px;  }
+.bz-stall--1 { transform: rotate( 0.5deg); margin-top: 0;     }
+.bz-stall--2 { transform: rotate( 1.9deg); margin-top: 16px;  }
+
+.bz-awning {
+  height: 30px;
+  flex-shrink: 0;
+}
+
+.bz-stall-body {
+  padding: 22px 20px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.bz-stall-sphere {
+  filter: drop-shadow(0 0 14px rgba(247,197,0,0.32));
+}
+
+.bz-stall-name {
+  font-family: var(--font-press-start), monospace;
+  font-size: 9px;
+  font-weight: 400;
+  color: #f7c500;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-shadow: 0 0 6px rgba(247,197,0,0.45);
+  margin: 0;
+}
+
+.bz-stall-price {
+  font-family: var(--font-press-start), monospace;
+  font-size: 15px;
+  color: #ffffff;
+  text-shadow: 0 0 6px rgba(255,255,255,0.25);
+  margin: 0;
+}
+
+/* ── Colorway swatches ──────────────────────────────────── */
+.bz-swatches {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.bz-swatch {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255,255,255,0.12);
+  padding: 0;
+  cursor: crosshair;
+  transition: border-color 180ms, transform 180ms, box-shadow 180ms;
+  flex-shrink: 0;
+  image-rendering: pixelated;
+}
+.bz-swatch:hover {
+  border-color: rgba(255,255,255,0.55);
+  transform: scale(1.18);
+}
+.bz-swatch--on {
+  border-color: #ffffff;
+  transform: scale(1.15);
+  box-shadow: 0 0 7px rgba(255,255,255,0.45);
+}
+
+/* ── Negotiate button ───────────────────────────────────── */
+.bz-negotiate {
+  font-family: var(--font-press-start), monospace;
+  font-size: 7px;
+  letter-spacing: 0.07em;
+  color: #080808;
+  background: #f7c500;
+  border: none;
+  padding: 10px 22px;
+  cursor: crosshair;
+  image-rendering: pixelated;
+  transition: background 200ms, box-shadow 200ms, transform 100ms;
+}
+.bz-negotiate:hover {
+  background: #ffffff;
+  box-shadow: 0 0 12px rgba(247,197,0,0.65);
+}
+.bz-negotiate:active {
+  transform: translateY(1px);
+}
+
+.bz-coming-soon {
+  font-family: var(--font-press-start), monospace;
+  font-size: 6px;
+  color: rgba(247,197,0,0.7);
+  letter-spacing: 0.08em;
+  text-align: center;
+  margin: 0;
+  animation: bz-fadein 280ms ease;
+}
+
+@keyframes bz-fadein {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* ── Merchant chat placeholder ──────────────────────────── */
+.bz-chat-zone {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+.bz-chat-inner {
+  border: 2px dashed rgba(247,197,0,0.22);
+  background: rgba(247,197,0,0.02);
+  padding: 56px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.bz-chat-tag {
+  font-family: var(--font-press-start), monospace;
+  font-size: 11px;
+  color: rgba(247,197,0,0.38);
+  letter-spacing: 0.1em;
+}
+
+.bz-chat-sub {
+  font-family: var(--font-press-start), monospace;
+  font-size: 6px;
+  color: rgba(247,197,0,0.22);
+  letter-spacing: 0.09em;
+}
+
+/* ── Bazaar responsive ──────────────────────────────────── */
+@media (max-width: 768px) {
+  .bz-stall {
+    width: 200px;
+  }
+  .bz-stall--0,
+  .bz-stall--1,
+  .bz-stall--2 {
+    transform: none;
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .bz-stall-row {
+    flex-direction: column;
+    align-items: center;
+  }
+  .bz-stall {
+    width: 270px;
+  }
+  .bz-market {
+    padding: 0 16px 60px;
+  }
+  .bz-chat-zone {
+    padding: 0 16px;
+  }
+  .bz-title {
+    font-size: clamp(14px, 6vw, 28px);
+  }
+}
