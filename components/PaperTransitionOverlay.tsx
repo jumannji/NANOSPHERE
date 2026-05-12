@@ -1,196 +1,245 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { subscribePaper } from '@/lib/paperTransition'
 import type { PaperConfig } from '@/lib/paperTransition'
 
-// ── Polygon geometry ──────────────────────────────────────────────────────────
-// Both polygons must have the same number of points (24) so CSS can morph
-// between them without jumping. Points go clockwise from near top-left.
+// ── Timing ────────────────────────────────────────────────────────────────────
+const ANIM_MS  = 2400   // canvas t: 0 → 1
+const TITLE_MS = 1950   // article title fades in
+const NAV_MS   = 2250   // router.push
+const FADE_MS  = 2550   // overlay fades out
+const DONE_MS  = 3000   // unmount
 
-// Crumpled: corners indented, edges with irregular bumps and dents
-const CRUMPLED = `polygon(
-  5% 8%, 22% 0%, 39% 6%, 54% 0%, 70% 5%, 86% 0%,
-  97% 0%, 100% 13%, 96% 32%, 100% 51%, 96% 70%, 100% 88%,
-  95% 100%, 76% 95%, 57% 100%, 40% 95%, 22% 100%, 6% 97%,
-  0% 85%, 5% 66%, 0% 47%, 4% 28%, 0% 11%, 2% 0%
-)`
+// ── Geometry ──────────────────────────────────────────────────────────────────
 
-// Flat: perfectly rectangular with 24 evenly-spaced edge points
-const FLAT = `polygon(
-  0% 0%, 17% 0%, 34% 0%, 51% 0%, 68% 0%, 85% 0%,
-  100% 0%, 100% 17%, 100% 34%, 100% 51%, 100% 68%, 100% 85%,
-  100% 100%, 83% 100%, 66% 100%, 49% 100%, 32% 100%, 15% 100%,
-  0% 100%, 0% 85%, 0% 68%, 0% 51%, 0% 34%, 0% 17%
-)`
+// Four wedge panels radiating from origin; each ~126° wide, overlapping → full 360° coverage
+const PANELS = [
+  { start: 0,             sweep: Math.PI * 0.70, delay: 0.00 },
+  { start: Math.PI * 0.6, sweep: Math.PI * 0.70, delay: 0.06 },
+  { start: Math.PI * 1.2, sweep: Math.PI * 0.70, delay: 0.12 },
+  { start: Math.PI * 1.8, sweep: Math.PI * 0.70, delay: 0.04 },
+]
 
-// Premium expo-out easing — springs out fast, drifts to rest
-const EASE = 'cubic-bezier(0.16, 1, 0.3, 1)'
+// Six crease lines at fold boundaries (evenly distributed)
+const CREASES = Array.from({ length: 6 }, (_, i) => ({
+  angle: (i / 6) * Math.PI * 2,
+  delay: i * 0.022,
+}))
 
-// ── Paper overlay ─────────────────────────────────────────────────────────────
+// ── Easing ────────────────────────────────────────────────────────────────────
+const easeOut3    = (t: number) => 1 - Math.pow(1 - t, 3)
+const easeOutExpo = (t: number) => t === 1 ? 1 : 1 - Math.pow(2, -10 * t)
 
-type Phase = 'initial' | 'expanding' | 'fading'
+// ── Overlay ───────────────────────────────────────────────────────────────────
 
-interface OverlayProps {
-  config: PaperConfig
-  onDone: () => void
-}
+interface OverlayProps { config: PaperConfig; onDone: () => void }
 
-function PaperOverlay({ config, onDone }: OverlayProps) {
-  const router = useRouter()
-  const [phase, setPhase] = useState<Phase>('initial')
+function DigitalFoldOverlay({ config, onDone }: OverlayProps) {
+  const router    = useRouter()
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const navigated = useRef(false)
   const [showTitle, setShowTitle] = useState(false)
-  const navigatedRef = useRef(false)
-
-  const vw = typeof window !== 'undefined' ? window.innerWidth  : 1
-  const vh = typeof window !== 'undefined' ? window.innerHeight : 1
-
-  // Transform the full-screen element so it sits exactly over the origin rect.
-  // With transform-origin 50% 50%:
-  //   center after transform = (vw/2 + tx, vh/2 + ty)  →  set equal to origin center
-  const { left, top, width, height } = config.origin
-  const tx = left + width  / 2 - vw / 2
-  const ty = top  + height / 2 - vh / 2
-  const sx = width  / vw
-  const sy = height / vh
+  const [fading,    setFading   ] = useState(false)
 
   useEffect(() => {
-    // Two rAF calls: first lets React paint the initial state, second triggers
-    // the CSS transitions (browser needs at least one painted frame first).
-    let raf1: number, raf2: number
-    raf1 = requestAnimationFrame(() => {
-      raf2 = requestAnimationFrame(() => setPhase('expanding'))
-    })
+    const canvas = canvasRef.current!
+    const ctx    = canvas.getContext('2d')!
+    const DPR    = Math.min(window.devicePixelRatio || 1, 2)
+    const vw     = window.innerWidth
+    const vh     = window.innerHeight
 
-    // Title fades in near the end of the expansion
-    const t1 = setTimeout(() => setShowTitle(true), 820)
+    canvas.width        = vw * DPR
+    canvas.height       = vh * DPR
+    canvas.style.width  = `${vw}px`
+    canvas.style.height = `${vh}px`
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0)
 
-    // Navigate while paper is still visible (SPA — no flash)
-    const t2 = setTimeout(() => {
-      if (!navigatedRef.current) {
-        navigatedRef.current = true
-        router.push(config.href)
+    // ── Theme colors ─────────────────────────────────────────────────────────
+    const cs      = getComputedStyle(document.documentElement)
+    const bgColor = cs.getPropertyValue('--bg').trim() || '#f0ece0'
+    const srgb    = cs.getPropertyValue('--sphere-rgb').trim() || '18,18,20'
+    const parts   = srgb.split(',')
+    const cr      = Number(parts[0])
+    const cg      = Number(parts[1])
+    const cb      = Number(parts[2])
+
+    // ── Origin (center of clicked sphere) ────────────────────────────────────
+    const ox = config.origin.left + config.origin.width  / 2
+    const oy = config.origin.top  + config.origin.height / 2
+
+    const maxDist = Math.max(
+      Math.hypot(ox,      oy     ),
+      Math.hypot(vw - ox, oy     ),
+      Math.hypot(ox,      vh - oy),
+      Math.hypot(vw - ox, vh - oy),
+    ) * 1.06
+
+    // ── Stable pixel noise (pre-allocated, changes every glitch frame) ────────
+    const NOISE = new Float32Array(1024)
+    for (let i = 0; i < NOISE.length; i++) NOISE[i] = Math.random()
+
+    const start = performance.now()
+    let rafId   = 0
+
+    const draw = (now: number) => {
+      const elapsed = now - start
+      const t = Math.min(elapsed / ANIM_MS, 1)
+
+      ctx.clearRect(0, 0, vw, vh)
+
+      // 1 ── Origin burst ─────────────────────────────────────────────────────
+      if (t < 0.14) {
+        const bt  = t / 0.14
+        ctx.strokeStyle = `rgba(${cr},${cg},${cb},${((1 - bt) * 0.9).toFixed(3)})`
+        ctx.lineWidth = 2
+        ctx.beginPath()
+        ctx.arc(ox, oy, bt * 30, 0, Math.PI * 2)
+        ctx.stroke()
+        if (bt > 0.28) {
+          const bt2 = (bt - 0.28) / 0.72
+          ctx.strokeStyle = `rgba(${cr},${cg},${cb},${((1 - bt2) * 0.45).toFixed(3)})`
+          ctx.lineWidth = 1
+          ctx.beginPath()
+          ctx.arc(ox, oy, bt2 * 18, 0, Math.PI * 2)
+          ctx.stroke()
+        }
       }
-    }, 980)
 
-    // Start fading the paper to reveal the now-loaded article page beneath
-    const t3 = setTimeout(() => setPhase('fading'), 1060)
+      // 2 ── Wedge panels expanding from origin ──────────────────────────────
+      ctx.fillStyle = bgColor
+      for (const p of PANELS) {
+        const pt = Math.max(0, Math.min(1, (t - p.delay) / 0.60))
+        if (pt === 0) continue
+        const dist = easeOutExpo(pt) * maxDist
 
-    // Unmount after fade completes
-    const t4 = setTimeout(onDone, 1320)
+        ctx.beginPath()
+        ctx.moveTo(ox, oy)
+        for (let s = 0; s <= 40; s++) {
+          const a = p.start + (p.sweep / 40) * s
+          ctx.lineTo(ox + Math.cos(a) * dist, oy + Math.sin(a) * dist)
+        }
+        ctx.closePath()
+        ctx.fill()
+      }
+
+      // 3 ── Full fill once panels converge ──────────────────────────────────
+      if (t > 0.68) {
+        const ft = easeOut3(Math.min(1, (t - 0.68) / 0.22))
+        ctx.globalAlpha = ft
+        ctx.fillStyle   = bgColor
+        ctx.fillRect(0, 0, vw, vh)
+        ctx.globalAlpha = 1
+      }
+
+      // 4 ── Crease lines with pixel noise ───────────────────────────────────
+      for (let i = 0; i < CREASES.length; i++) {
+        const c  = CREASES[i]
+        const ct = Math.max(0, Math.min(1, (t - c.delay) / 0.50))
+        if (ct === 0) continue
+
+        const dist = easeOutExpo(ct) * maxDist
+        const ex   = ox + Math.cos(c.angle) * dist
+        const ey   = oy + Math.sin(c.angle) * dist
+
+        const lineOp = ct < 0.55 ? ct / 0.55 : 1 - (ct - 0.55) / 0.45
+        if (lineOp > 0.005) {
+          ctx.strokeStyle = `rgba(${cr},${cg},${cb},${(lineOp * 0.88).toFixed(3)})`
+          ctx.lineWidth   = 1.5
+          ctx.beginPath()
+          ctx.moveTo(ox, oy)
+          ctx.lineTo(ex, ey)
+          ctx.stroke()
+
+          // Pixel noise scattered along each crease
+          const spacing = 8
+          const steps   = Math.min(110, Math.floor(dist / spacing))
+          for (let n = 0; n < steps; n++) {
+            const ni   = (i * 128 + n * 5) & 1023
+            const frac = n / steps
+            const lx   = ox + Math.cos(c.angle) * frac * dist
+            const ly   = oy + Math.sin(c.angle) * frac * dist
+            const px   = lx + (NOISE[ni]            - 0.5) * 10
+            const py   = ly + (NOISE[(ni + 1) & 1023] - 0.5) * 10
+            const pop  = NOISE[(ni + 2) & 1023] * 0.72 * lineOp
+            const psz  = NOISE[(ni + 3) & 1023] < 0.11 ? 3 : 1
+            ctx.fillStyle = `rgba(${cr},${cg},${cb},${pop.toFixed(3)})`
+            ctx.fillRect(Math.round(px), Math.round(py), psz, psz)
+          }
+        }
+      }
+
+      // 5 ── Glitch bars (offset horizontal bands) ───────────────────────────
+      if (t > 0.32 && t < 0.90) {
+        // Refresh at ~18 fps for a stutter feel
+        const frame = Math.floor(elapsed / 55)
+        const nBars = 2 + Math.floor(easeOut3(Math.min(1, (t - 0.32) / 0.28)) * 5)
+        for (let gi = 0; gi < nBars; gi++) {
+          const ni  = ((frame * 13 + gi * 37) & 1023)
+          const gy  = NOISE[ni]              * vh
+          const gw  = 25 + NOISE[(ni+1)&1023] * 200
+          const gx  = NOISE[(ni+2)&1023]      * (vw - gw)
+          const gh  = 1 + Math.floor(NOISE[(ni+3)&1023] * 3)
+          const gop = NOISE[(ni+4)&1023]      * 0.36
+          ctx.fillStyle = `rgba(${cr},${cg},${cb},${gop.toFixed(3)})`
+          ctx.fillRect(Math.round(gx), Math.round(gy), Math.round(gw), gh)
+        }
+      }
+
+      // 6 ── Scanlines across expanding panels ───────────────────────────────
+      if (t > 0.08) {
+        const st  = Math.min(1, (t - 0.08) / 0.50)
+        const sOp = t < 0.78 ? st * 0.055 : (1 - (t - 0.78) / 0.22) * 0.055
+        if (sOp > 0.001) {
+          ctx.fillStyle = `rgba(${cr},${cg},${cb},${sOp.toFixed(4)})`
+          for (let sy = 0; sy < vh; sy += 4) ctx.fillRect(0, sy, vw, 1)
+        }
+      }
+
+      if (t < 1) rafId = requestAnimationFrame(draw)
+    }
+
+    rafId = requestAnimationFrame(draw)
+
+    const t1 = setTimeout(() => setShowTitle(true), TITLE_MS)
+    const t2 = setTimeout(() => {
+      if (!navigated.current) { navigated.current = true; router.push(config.href) }
+    }, NAV_MS)
+    const t3 = setTimeout(() => setFading(true), FADE_MS)
+    const t4 = setTimeout(onDone, DONE_MS)
 
     return () => {
-      cancelAnimationFrame(raf1)
-      cancelAnimationFrame(raf2)
+      cancelAnimationFrame(rafId)
       clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const isExpanding = phase === 'expanding'
-  const isFading    = phase === 'fading'
-  const isAnimating = isExpanding || isFading
-
-  // ── Paper element styles ──────────────────────────────────────────────────
-  const paperStyle: React.CSSProperties = {
-    position: 'fixed',
-    inset: 0,
-    zIndex: 9998,
-    overflow: 'hidden',
-    background: 'var(--bg)',
-    willChange: isFading ? 'auto' : 'transform, clip-path',
-
-    // Geometry: starts at origin rect, expands to full screen
-    transform:  isAnimating ? 'none' : `translate(${tx}px, ${ty}px) scale(${sx}, ${sy})`,
-    clipPath:   isAnimating ? FLAT    : CRUMPLED,
-
-    // Subtle sharpening as paper flattens
-    filter: isAnimating ? 'none' : 'blur(0.5px)',
-
-    // Opacity fades paper away to reveal article page
-    opacity: isFading ? 0 : 1,
-
-    transition: isFading
-      ? 'opacity 250ms ease'
-      : isExpanding
-        ? [
-            `transform  1.1s  ${EASE}`,
-            `clip-path  1.05s ${EASE}`,
-            'filter     0.8s  ease',
-          ].join(', ')
-        : 'none',
-  }
-
-  // ── Fold crease lines — fade out as paper flattens ────────────────────────
-  const foldOpacity: React.CSSProperties = {
-    position: 'absolute',
-    inset: 0,
-    pointerEvents: 'none',
-    opacity: isExpanding ? 0 : 0.85,
-    transition: isExpanding ? 'opacity 0.6s ease' : 'none',
-  }
-
-  const lineBase: React.CSSProperties = {
-    position: 'absolute',
-  }
-
-  // ── Article title — appears as the paper finishes opening ─────────────────
-  const titleWrap: React.CSSProperties = {
-    position: 'absolute',
-    inset: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '0 10vw',
-    pointerEvents: 'none',
-    opacity: showTitle ? 0.86 : 0,
-    transform: showTitle ? 'translateY(0)' : 'translateY(18px)',
-    transition: 'opacity 0.45s ease, transform 0.55s cubic-bezier(0.22, 1, 0.36, 1)',
-  }
-
   return (
-    <div style={paperStyle}>
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      zIndex: 9998,
+      cursor: 'default',
+      opacity: fading ? 0 : 1,
+      transition: fading ? 'opacity 400ms ease' : 'none',
+    }}>
+      <canvas ref={canvasRef} style={{ display: 'block' }} />
 
-      {/* Fold creases — horizontal, vertical, and one diagonal */}
-      <div style={foldOpacity}>
-        {/* Horizontal fold at midpoint */}
-        <div style={{
-          ...lineBase,
-          left: 0, right: 0, top: '50%',
-          height: '1px',
-          transform: 'translateY(-0.5px)',
-          background: 'linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.09) 18%, rgba(0,0,0,0.09) 82%, transparent 100%)',
-        }} />
-        {/* Vertical fold at midpoint */}
-        <div style={{
-          ...lineBase,
-          top: 0, bottom: 0, left: '50%',
-          width: '1px',
-          transform: 'translateX(-0.5px)',
-          background: 'linear-gradient(0deg, transparent 0%, rgba(0,0,0,0.09) 18%, rgba(0,0,0,0.09) 82%, transparent 100%)',
-        }} />
-        {/* Diagonal crease — shallow gradient simulating a fold shadow */}
-        <div style={{
-          ...lineBase,
-          inset: 0,
-          background: 'linear-gradient(138deg, transparent 46%, rgba(0,0,0,0.04) 49%, rgba(0,0,0,0.04) 51%, transparent 54%)',
-        }} />
-        {/* Corner shadow — crumpled paper casts depth at corners */}
-        <div style={{
-          ...lineBase,
-          inset: 0,
-          background: 'radial-gradient(ellipse at 0% 0%, rgba(0,0,0,0.07) 0%, transparent 45%)',
-        }} />
-        <div style={{
-          ...lineBase,
-          inset: 0,
-          background: 'radial-gradient(ellipse at 100% 100%, rgba(0,0,0,0.05) 0%, transparent 40%)',
-        }} />
-      </div>
-
-      {/* Article title — magazine cover reveal */}
-      <div style={titleWrap}>
+      {/* Article title — fades in once screen is fully covered */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '0 10vw',
+        pointerEvents: 'none',
+        opacity: showTitle ? 0.88 : 0,
+        transform: showTitle ? 'none' : 'translateY(14px)',
+        transition: 'opacity 0.5s ease, transform 0.65s cubic-bezier(0.22, 1, 0.36, 1)',
+      }}>
         <h1 style={{
           fontFamily: 'var(--font-italiana), serif',
           fontWeight: 400,
@@ -204,15 +253,14 @@ function PaperOverlay({ config, onDone }: OverlayProps) {
           {config.title}
         </h1>
       </div>
-
     </div>
   )
 }
 
-// ── Root component — subscribes to the store, renders portal ─────────────────
+// ── Root component ────────────────────────────────────────────────────────────
 
 export default function PaperTransitionOverlay() {
-  const [config, setConfig] = useState<PaperConfig | null>(null)
+  const [config,  setConfig ] = useState<PaperConfig | null>(null)
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -223,8 +271,7 @@ export default function PaperTransitionOverlay() {
   if (!mounted || !config) return null
 
   return createPortal(
-    <PaperOverlay
-      // Re-mount fresh if same article clicked again after completion
+    <DigitalFoldOverlay
       key={`${config.href}:${config.origin.left}:${config.origin.top}`}
       config={config}
       onDone={() => setConfig(null)}
