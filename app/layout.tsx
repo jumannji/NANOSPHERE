@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Cinzel, Italiana, Press_Start_2P } from 'next/font/google'
 import './globals.css'
+import PaperTransitionOverlay from '@/components/PaperTransitionOverlay'
 
 const cinzel = Cinzel({
   subsets: ['latin'],
@@ -40,7 +41,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Runs synchronously before paint — no theme flash */}
         <script dangerouslySetInnerHTML={{ __html: `(function(){if(location.pathname==='/nanobazaar'){document.documentElement.dataset.theme='bazaar';sessionStorage.setItem('ns-theme','bazaar');return;}var h=location.pathname==='/';var s=sessionStorage.getItem('ns-theme');var t;if(h){t=String(Math.floor(Math.random()*4)+1);sessionStorage.setItem('ns-theme',t);}else{t=s||String(Math.floor(Math.random()*4)+1);if(!s)sessionStorage.setItem('ns-theme',t);}if(t!=='1')document.documentElement.dataset.theme=t;})()` }} />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <PaperTransitionOverlay />
+      </body>
     </html>
   )
 }

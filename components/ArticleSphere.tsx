@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useRef } from 'react'
+import { firePaper } from '@/lib/paperTransition'
 
 const SPHERE_CIRCLES = (() => {
   const arr: { pts: number[][] }[] = []
@@ -82,8 +83,24 @@ export default function ArticleSphere({ title, href }: Props) {
     return () => cancelAnimationFrame(rafId)
   }, [])
 
+  function handleClick(e: React.MouseEvent<HTMLAnchorElement>) {
+    // Honour reduced-motion — fall through to normal Link navigation
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+    e.preventDefault()
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const r = canvas.getBoundingClientRect()
+    firePaper({
+      origin: { left: r.left, top: r.top, width: r.width, height: r.height },
+      href,
+      title,
+    })
+  }
+
   return (
-    <Link href={href} className="article-sphere-link">
+    <Link href={href} className="article-sphere-link" onClick={handleClick}>
       <canvas
         ref={canvasRef}
         style={{ width: SIZE, height: SIZE, display: 'block' }}
