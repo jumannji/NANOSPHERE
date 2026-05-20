@@ -1,26 +1,18 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useEffect, useState } from 'react'
 import Nav from '@/components/Nav'
 import BazaarSphere from '@/components/BazaarSphere'
+import ClothingRack from '@/components/ClothingRack'
 
 // OG Collection end date — 3 weeks from site launch (2026-04-30)
 const END_DATE = new Date('2026-05-21T00:00:00')
 
 const PRODUCTS = [
-  { id: 'hoodie',     name: 'Hoodie',     price: 85 },
-  { id: 'tshirt',     name: 'T-Shirt',    price: 45 },
-  { id: 'sweatpants', name: 'Sweatpants', price: 65 },
+  { id: 'hoodie',     name: 'Hoodie',     price: 85,  desc: 'Oversized, drop-shoulder silhouette.' },
+  { id: 'tshirt',     name: 'T-Shirt',    price: 45,  desc: 'Heavyweight cotton, boxy fit.'        },
+  { id: 'sweatpants', name: 'Sweatpants', price: 65,  desc: 'Tapered leg, drawstring waist.'       },
 ] as const
-
-const COLORWAYS = [
-  { name: 'yellow', color: 'rgb(247,197,0)' },
-  { name: 'mint',   color: '#c8fffb'        },
-  { name: 'red',    color: 'rgb(255,0,0)'   },
-  { name: 'green',  color: '#319822'        },
-] as const
-
-type ProductId = typeof PRODUCTS[number]['id']
 
 function useCountdown(end: Date) {
   const [rem, setRem] = useState({ days: 0, hours: 0, mins: 0, secs: 0 })
@@ -41,24 +33,12 @@ function pad(n: number) { return String(n).padStart(2, '0') }
 
 export default function NanoBazaarPage() {
   const { days, hours, mins, secs } = useCountdown(END_DATE)
+  const [negotiating, setNegotiating] = useState(false)
 
-  const [negotiating, setNegotiating] = useState<ProductId | null>(null)
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const [selected, setSelected] = useState<Partial<Record<ProductId, string>>>({})
-
-  function handleNegotiate(id: ProductId) {
-    if (timerRef.current) clearTimeout(timerRef.current)
-    setNegotiating(id)
-    timerRef.current = setTimeout(() => { setNegotiating(null); timerRef.current = null }, 3000)
+  function handleNegotiate() {
+    setNegotiating(true)
+    setTimeout(() => setNegotiating(false), 3000)
   }
-
-  function pickColor(id: ProductId, name: string) {
-    setSelected(s => ({ ...s, [id]: name }))
-  }
-
-  // Stall awning stripe colors map to colorways by index
-  const awningColors = ['rgb(247,197,0)', '#c8fffb', '#319822']
 
   return (
     <>
@@ -155,59 +135,9 @@ export default function NanoBazaarPage() {
           </div>
         </header>
 
-        {/* ── Market stalls ────────────────────────────────── */}
-        <section className="bz-market" aria-label="Market stalls">
-          <div className="bz-stall-row">
-            {PRODUCTS.map((p, i) => (
-              <article key={p.id} className={`bz-stall bz-stall--${i}`}>
-                {/* Stall awning */}
-                <div
-                  className="bz-awning"
-                  style={{
-                    background: `repeating-linear-gradient(90deg, ${awningColors[i]} 0px, ${awningColors[i]} 12px, #080808 12px, #080808 24px)`,
-                  }}
-                />
-
-                {/* Stall body */}
-                <div className="bz-stall-body">
-                  <div className="bz-stall-sphere">
-                    <BazaarSphere size={64} />
-                  </div>
-
-                  <h2 className="bz-stall-name">{p.name}</h2>
-                  <p className="bz-stall-price">${p.price}</p>
-
-                  {/* Colorway swatches */}
-                  <div className="bz-swatches" role="group" aria-label="Colorways">
-                    {COLORWAYS.map(cw => (
-                      <button
-                        key={cw.name}
-                        className={`bz-swatch${selected[p.id] === cw.name ? ' bz-swatch--on' : ''}`}
-                        style={{ background: cw.color }}
-                        onClick={() => pickColor(p.id, cw.name)}
-                        aria-label={`${cw.name} colorway`}
-                        aria-pressed={selected[p.id] === cw.name}
-                      />
-                    ))}
-                  </div>
-
-                  {/* Negotiate */}
-                  <button
-                    className="bz-negotiate"
-                    onClick={() => handleNegotiate(p.id)}
-                  >
-                    Negotiate
-                  </button>
-
-                  {negotiating === p.id && (
-                    <p className="bz-coming-soon" aria-live="polite">
-                      Coming soon
-                    </p>
-                  )}
-                </div>
-              </article>
-            ))}
-          </div>
+        {/* ── Clothing rack ─────────────────────────────── */}
+        <section className="bz-rack-section" aria-label="Clothing rack">
+          <ClothingRack />
         </section>
 
         {/* ══════════════════════════════════════════════════════════
