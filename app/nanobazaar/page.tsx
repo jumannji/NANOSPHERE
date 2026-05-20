@@ -1,17 +1,15 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Nav from '@/components/Nav'
-import BazaarSphere from '@/components/BazaarSphere'
 import ClothingRack from '@/components/ClothingRack'
 
-// OG Collection end date — 3 weeks from site launch (2026-04-30)
 const END_DATE = new Date('2026-05-21T00:00:00')
 
 const PRODUCTS = [
-  { id: 'hoodie',     name: 'Hoodie',     price: 85,  desc: 'Oversized, drop-shoulder silhouette.' },
-  { id: 'tshirt',     name: 'T-Shirt',    price: 45,  desc: 'Heavyweight cotton, boxy fit.'        },
-  { id: 'sweatpants', name: 'Sweatpants', price: 65,  desc: 'Tapered leg, drawstring waist.'       },
+  { id: 'hoodie',     name: 'Hoodie',     price: 85, desc: 'Oversized, drop-shoulder silhouette.' },
+  { id: 'tshirt',     name: 'T-Shirt',    price: 45, desc: 'Heavyweight cotton, boxy fit.'        },
+  { id: 'sweatpants', name: 'Sweatpants', price: 65, desc: 'Tapered leg, drawstring waist.'       },
 ] as const
 
 function useCountdown(end: Date) {
@@ -19,8 +17,13 @@ function useCountdown(end: Date) {
   useEffect(() => {
     function tick() {
       const diff = Math.max(0, end.getTime() - Date.now())
-      const s    = Math.floor(diff / 1000)
-      setRem({ days: Math.floor(s / 86400), hours: Math.floor((s % 86400) / 3600), mins: Math.floor((s % 3600) / 60), secs: s % 60 })
+      const s = Math.floor(diff / 1000)
+      setRem({
+        days:  Math.floor(s / 86400),
+        hours: Math.floor((s % 86400) / 3600),
+        mins:  Math.floor((s % 3600)  / 60),
+        secs:  s % 60,
+      })
     }
     tick()
     const id = setInterval(tick, 1000)
@@ -31,9 +34,32 @@ function useCountdown(end: Date) {
 
 function pad(n: number) { return String(n).padStart(2, '0') }
 
+// Minimal diamond pendant SVG
+function Diamond() {
+  return (
+    <svg width="8" height="10" viewBox="0 0 8 10" style={{ display: 'block' }} aria-hidden>
+      <polygon points="4,0 8,5 4,10 0,5"
+        fill="none" stroke="rgba(247,197,0,0.26)" strokeWidth="0.5" />
+    </svg>
+  )
+}
+
+// Minimal cross pendant SVG
+function Cross() {
+  return (
+    <svg width="7" height="7" viewBox="0 0 7 7" style={{ display: 'block' }} aria-hidden>
+      <line x1="3.5" y1="0" x2="3.5" y2="7" stroke="rgba(247,197,0,0.20)" strokeWidth="0.5" />
+      <line x1="0"   y1="3.5" x2="7" y2="3.5" stroke="rgba(247,197,0,0.20)" strokeWidth="0.5" />
+    </svg>
+  )
+}
+
 export default function NanoBazaarPage() {
   const { days, hours, mins, secs } = useCountdown(END_DATE)
+  const [current]     = useState(0)
   const [negotiating, setNegotiating] = useState(false)
+
+  const product = PRODUCTS[current]
 
   function handleNegotiate() {
     setNegotiating(true)
@@ -42,70 +68,29 @@ export default function NanoBazaarPage() {
 
   return (
     <>
-      {/* Pixel scanline overlay */}
       <div aria-hidden className="bz-scanlines" />
 
-      {/* ── Hanging decorations — left ───────────────── */}
+      {/* ── Pendants — left ─────────────────────────── */}
       <div className="bz-decor bz-decor--left" aria-hidden="true">
-        <div className="bz-hang" style={{ animationDuration: '5.2s', animationDelay: '0s' }}>
-          <div className="bz-string" style={{ height: '64px' }} />
-          <svg className="bz-pixel-lantern" width="14" height="20" viewBox="0 0 14 20" xmlns="http://www.w3.org/2000/svg">
-            <rect x="5" y="0" width="4" height="3" fill="#f7c500"/>
-            <rect x="1" y="3" width="12" height="13" fill="#3d0055"/>
-            <rect x="1" y="3" width="12" height="13" fill="none" stroke="#f7c500" strokeWidth="1"/>
-            <rect x="4" y="6" width="2" height="7" fill="#f7c500" opacity="0.25"/>
-            <rect x="8" y="6" width="2" height="7" fill="#f7c500" opacity="0.25"/>
-            <rect x="5" y="16" width="4" height="3" fill="#f7c500"/>
-          </svg>
-          <div className="bz-tassel" style={{ '--tc': '#9b4dca' } as React.CSSProperties} />
+        <div className="bz-hang" style={{ animationDuration: '7.5s', animationDelay: '0s' }}>
+          <div className="bz-string" style={{ height: '130px' }} />
+          <Diamond />
         </div>
-
-        <div className="bz-hang" style={{ animationDuration: '7.1s', animationDelay: '-3.2s' }}>
-          <div className="bz-string" style={{ height: '100px' }} />
-          <svg className="bz-pixel-lantern" width="10" height="16" viewBox="0 0 10 16" xmlns="http://www.w3.org/2000/svg">
-            <rect x="3" y="0" width="4" height="2" fill="#f7c500"/>
-            <rect x="0" y="2" width="10" height="10" fill="#004a3d"/>
-            <rect x="0" y="2" width="10" height="10" fill="none" stroke="#f7c500" strokeWidth="1"/>
-            <rect x="3" y="12" width="4" height="2" fill="#f7c500"/>
-          </svg>
-          <div className="bz-tassel" style={{ '--tc': '#00aa88' } as React.CSSProperties} />
-        </div>
-
-        <div className="bz-hang" style={{ animationDuration: '4.6s', animationDelay: '-1.8s' }}>
-          <div className="bz-string" style={{ height: '40px' }} />
-          <div className="bz-fabric" />
+        <div className="bz-hang" style={{ animationDuration: '9.8s', animationDelay: '-4.2s' }}>
+          <div className="bz-string" style={{ height: '88px' }} />
+          <Cross />
         </div>
       </div>
 
-      {/* ── Hanging decorations — right ──────────────── */}
+      {/* ── Pendants — right ────────────────────────── */}
       <div className="bz-decor bz-decor--right" aria-hidden="true">
-        <div className="bz-hang" style={{ animationDuration: '4.9s', animationDelay: '-0.8s' }}>
-          <div className="bz-string" style={{ height: '36px' }} />
-          <div className="bz-fabric bz-fabric--ruby" />
+        <div className="bz-hang" style={{ animationDuration: '8.4s', animationDelay: '-2.6s' }}>
+          <div className="bz-string" style={{ height: '105px' }} />
+          <Diamond />
         </div>
-
-        <div className="bz-hang" style={{ animationDuration: '6.5s', animationDelay: '-2.5s' }}>
-          <div className="bz-string" style={{ height: '88px' }} />
-          <svg className="bz-pixel-lantern" width="10" height="16" viewBox="0 0 10 16" xmlns="http://www.w3.org/2000/svg">
-            <rect x="3" y="0" width="4" height="2" fill="#f7c500"/>
-            <rect x="0" y="2" width="10" height="10" fill="#8b1a00"/>
-            <rect x="0" y="2" width="10" height="10" fill="none" stroke="#f7c500" strokeWidth="1"/>
-            <rect x="3" y="12" width="4" height="2" fill="#f7c500"/>
-          </svg>
-          <div className="bz-tassel" style={{ '--tc': '#ff4444' } as React.CSSProperties} />
-        </div>
-
-        <div className="bz-hang" style={{ animationDuration: '5.8s', animationDelay: '-4.1s' }}>
+        <div className="bz-hang" style={{ animationDuration: '6.9s', animationDelay: '-1.1s' }}>
           <div className="bz-string" style={{ height: '72px' }} />
-          <svg className="bz-pixel-lantern" width="14" height="20" viewBox="0 0 14 20" xmlns="http://www.w3.org/2000/svg">
-            <rect x="5" y="0" width="4" height="3" fill="#f7c500"/>
-            <rect x="1" y="3" width="12" height="13" fill="#005a8b"/>
-            <rect x="1" y="3" width="12" height="13" fill="none" stroke="#f7c500" strokeWidth="1"/>
-            <rect x="4" y="6" width="2" height="7" fill="#f7c500" opacity="0.25"/>
-            <rect x="8" y="6" width="2" height="7" fill="#f7c500" opacity="0.25"/>
-            <rect x="5" y="16" width="4" height="3" fill="#f7c500"/>
-          </svg>
-          <div className="bz-tassel" style={{ '--tc': '#00aaff' } as React.CSSProperties} />
+          <Cross />
         </div>
       </div>
 
@@ -113,50 +98,44 @@ export default function NanoBazaarPage() {
 
       <main className="bz-main">
 
-        {/* ── Hero ─────────────────────────────────────────── */}
-        <header className="bz-header">
-          <div className="bz-hero-sphere">
-            <BazaarSphere size={220} />
-          </div>
+        {/* ── Countdown strip ──────────────────────────────── */}
+        <div className="bz-countdown-strip" aria-label="Collection countdown">
+          <span className="bz-cd-label-text">OG Collection</span>
+          <span className="bz-cd-rule" aria-hidden>—</span>
+          <span className="bz-cd-nums">
+            {pad(days)}<small>D</small>
+            {pad(hours)}<small>H</small>
+            {pad(mins)}<small>M</small>
+            {pad(secs)}<small>S</small>
+          </span>
+        </div>
 
-          <h1 className="bz-title">NanoBazaar</h1>
-
-          <div className="bz-countdown">
-            <p className="bz-cd-label">OG Collection available until May 21, 2026</p>
-            <div className="bz-cd-timer">
-              <span>{pad(days)}<span className="bz-cd-unit">D</span></span>
-              <span className="bz-cd-sep">:</span>
-              <span>{pad(hours)}<span className="bz-cd-unit">H</span></span>
-              <span className="bz-cd-sep">:</span>
-              <span>{pad(mins)}<span className="bz-cd-unit">M</span></span>
-              <span className="bz-cd-sep">:</span>
-              <span>{pad(secs)}<span className="bz-cd-unit">S</span></span>
-            </div>
-          </div>
-        </header>
-
-        {/* ── Clothing rack ─────────────────────────────── */}
+        {/* ── Rack — the centerpiece ───────────────────────── */}
         <section className="bz-rack-section" aria-label="Clothing rack">
           <ClothingRack />
         </section>
 
-        {/* ══════════════════════════════════════════════════════════
-            MERCHANT CHAT — INSERT COMPONENT HERE
-            ─────────────────────────────────────────────────────────
-            Drop the merchant chat widget inside .bz-chat-inner.
-            The outer .bz-chat-zone section and its label can stay.
-            ══════════════════════════════════════════════════════════ */}
+        {/* ── Product info ─────────────────────────────────── */}
+        <section className="bz-product-info" aria-label="Current product">
+          <h2 className="bz-product-name">{product.name}</h2>
+          <p className="bz-product-price">${product.price}</p>
+          <p className="bz-product-desc">{product.desc}</p>
+          <button className="bz-negotiate" onClick={handleNegotiate}>
+            Negotiate
+          </button>
+          {negotiating && (
+            <p className="bz-coming-soon" aria-live="polite">Coming soon</p>
+          )}
+        </section>
+
+        {/* ── Merchant chat ─────────────────────────────────── */}
+        {/* ↓ Replace .bz-chat-inner contents with chat component when ready ↓ */}
         <section className="bz-chat-zone" aria-label="Merchant chat">
           <div className="bz-chat-inner">
-            {/* ↓ REPLACE THIS PLACEHOLDER WITH THE CHAT COMPONENT ↓ */}
-            <span className="bz-chat-tag">[ MERCHANT CHAT ]</span>
+            <span className="bz-chat-tag">Merchant Chat</span>
             <span className="bz-chat-sub">Direct negotiation — coming soon</span>
-            {/* ↑ END PLACEHOLDER ↑ */}
           </div>
         </section>
-        {/* ══════════════════════════════════════════════════════════
-            END MERCHANT CHAT SECTION
-            ══════════════════════════════════════════════════════════ */}
 
       </main>
     </>
