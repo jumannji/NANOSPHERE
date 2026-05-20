@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import Nav from '@/components/Nav'
 import BazaarSphere from '@/components/BazaarSphere'
 
@@ -64,6 +64,70 @@ export default function NanoBazaarPage() {
     <>
       {/* Pixel scanline overlay */}
       <div aria-hidden className="bz-scanlines" />
+
+      {/* ── Hanging decorations — left ───────────────── */}
+      <div className="bz-decor bz-decor--left" aria-hidden="true">
+        <div className="bz-hang" style={{ animationDuration: '5.2s', animationDelay: '0s' }}>
+          <div className="bz-string" style={{ height: '64px' }} />
+          <svg className="bz-pixel-lantern" width="14" height="20" viewBox="0 0 14 20" xmlns="http://www.w3.org/2000/svg">
+            <rect x="5" y="0" width="4" height="3" fill="#f7c500"/>
+            <rect x="1" y="3" width="12" height="13" fill="#3d0055"/>
+            <rect x="1" y="3" width="12" height="13" fill="none" stroke="#f7c500" strokeWidth="1"/>
+            <rect x="4" y="6" width="2" height="7" fill="#f7c500" opacity="0.25"/>
+            <rect x="8" y="6" width="2" height="7" fill="#f7c500" opacity="0.25"/>
+            <rect x="5" y="16" width="4" height="3" fill="#f7c500"/>
+          </svg>
+          <div className="bz-tassel" style={{ '--tc': '#9b4dca' } as React.CSSProperties} />
+        </div>
+
+        <div className="bz-hang" style={{ animationDuration: '7.1s', animationDelay: '-3.2s' }}>
+          <div className="bz-string" style={{ height: '100px' }} />
+          <svg className="bz-pixel-lantern" width="10" height="16" viewBox="0 0 10 16" xmlns="http://www.w3.org/2000/svg">
+            <rect x="3" y="0" width="4" height="2" fill="#f7c500"/>
+            <rect x="0" y="2" width="10" height="10" fill="#004a3d"/>
+            <rect x="0" y="2" width="10" height="10" fill="none" stroke="#f7c500" strokeWidth="1"/>
+            <rect x="3" y="12" width="4" height="2" fill="#f7c500"/>
+          </svg>
+          <div className="bz-tassel" style={{ '--tc': '#00aa88' } as React.CSSProperties} />
+        </div>
+
+        <div className="bz-hang" style={{ animationDuration: '4.6s', animationDelay: '-1.8s' }}>
+          <div className="bz-string" style={{ height: '40px' }} />
+          <div className="bz-fabric" />
+        </div>
+      </div>
+
+      {/* ── Hanging decorations — right ──────────────── */}
+      <div className="bz-decor bz-decor--right" aria-hidden="true">
+        <div className="bz-hang" style={{ animationDuration: '4.9s', animationDelay: '-0.8s' }}>
+          <div className="bz-string" style={{ height: '36px' }} />
+          <div className="bz-fabric bz-fabric--ruby" />
+        </div>
+
+        <div className="bz-hang" style={{ animationDuration: '6.5s', animationDelay: '-2.5s' }}>
+          <div className="bz-string" style={{ height: '88px' }} />
+          <svg className="bz-pixel-lantern" width="10" height="16" viewBox="0 0 10 16" xmlns="http://www.w3.org/2000/svg">
+            <rect x="3" y="0" width="4" height="2" fill="#f7c500"/>
+            <rect x="0" y="2" width="10" height="10" fill="#8b1a00"/>
+            <rect x="0" y="2" width="10" height="10" fill="none" stroke="#f7c500" strokeWidth="1"/>
+            <rect x="3" y="12" width="4" height="2" fill="#f7c500"/>
+          </svg>
+          <div className="bz-tassel" style={{ '--tc': '#ff4444' } as React.CSSProperties} />
+        </div>
+
+        <div className="bz-hang" style={{ animationDuration: '5.8s', animationDelay: '-4.1s' }}>
+          <div className="bz-string" style={{ height: '72px' }} />
+          <svg className="bz-pixel-lantern" width="14" height="20" viewBox="0 0 14 20" xmlns="http://www.w3.org/2000/svg">
+            <rect x="5" y="0" width="4" height="3" fill="#f7c500"/>
+            <rect x="1" y="3" width="12" height="13" fill="#005a8b"/>
+            <rect x="1" y="3" width="12" height="13" fill="none" stroke="#f7c500" strokeWidth="1"/>
+            <rect x="4" y="6" width="2" height="7" fill="#f7c500" opacity="0.25"/>
+            <rect x="8" y="6" width="2" height="7" fill="#f7c500" opacity="0.25"/>
+            <rect x="5" y="16" width="4" height="3" fill="#f7c500"/>
+          </svg>
+          <div className="bz-tassel" style={{ '--tc': '#00aaff' } as React.CSSProperties} />
+        </div>
+      </div>
 
       <Nav showSphere />
 
