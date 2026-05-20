@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Cinzel, Italiana, Press_Start_2P } from 'next/font/google'
 import './globals.css'
 import PaperTransitionOverlay from '@/components/PaperTransitionOverlay'
+import SphereTransitionOverlay from '@/components/SphereTransitionOverlay'
 
 const cinzel = Cinzel({
   subsets: ['latin'],
@@ -44,6 +45,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         {children}
         <PaperTransitionOverlay />
+        <SphereTransitionOverlay />
       </body>
     </html>
   )

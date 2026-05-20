@@ -1,9 +1,10 @@
 'use client'
 
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import NavSphere from './NavSphere'
+import TransitionLink from './TransitionLink'
+import { fireNav } from '@/lib/navTransition'
 
 interface NavProps { showSphere?: boolean }
 
@@ -15,7 +16,11 @@ export default function Nav({ showSphere = false }: NavProps) {
     if (!revealed) {
       setRevealed(true)
     } else {
-      router.push('/')
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        router.push('/')
+      } else {
+        fireNav({ href: '/' })
+      }
     }
   }
 
@@ -24,12 +29,12 @@ export default function Nav({ showSphere = false }: NavProps) {
     return (
       <nav>
         <div className="nav-links">
-          <Link href="/articles">Articles</Link>
-          <Link href="/nanobazaar" className="pill">
+          <TransitionLink href="/articles">Articles</TransitionLink>
+          <TransitionLink href="/nanobazaar" className="pill">
             <span className="pill-label">NanoBazaar</span>
-          </Link>
-          <Link href="/nanoweb">NanoWeb</Link>
-          <Link href="/about">About</Link>
+          </TransitionLink>
+          <TransitionLink href="/nanoweb">NanoWeb</TransitionLink>
+          <TransitionLink href="/about">About</TransitionLink>
         </div>
       </nav>
     )
@@ -66,17 +71,17 @@ export default function Nav({ showSphere = false }: NavProps) {
     <nav>
       <div className="nav-links nav-links--sphere">
         <div className="nav-group-left">
-          <Link href="/articles" style={leftLink(80)}>Articles</Link>
-          <Link href="/nanobazaar" style={leftLink(20)} className="pill">
+          <TransitionLink href="/articles" style={leftLink(80)}>Articles</TransitionLink>
+          <TransitionLink href="/nanobazaar" style={leftLink(20)} className="pill">
             <span className="pill-label">NanoBazaar</span>
-          </Link>
+          </TransitionLink>
         </div>
 
         <NavSphere onClick={handleSphereClick} />
 
         <div className="nav-group-right">
-          <Link href="/nanoweb" style={rightLink(20)}>NanoWeb</Link>
-          <Link href="/about"   style={rightLink(80)}>About</Link>
+          <TransitionLink href="/nanoweb" style={rightLink(20)}>NanoWeb</TransitionLink>
+          <TransitionLink href="/about"   style={rightLink(80)}>About</TransitionLink>
         </div>
       </div>
     </nav>
