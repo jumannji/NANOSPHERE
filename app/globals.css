@@ -411,13 +411,23 @@ nav {
 .bz-main {
   position: relative;
   z-index: 1;
-  padding-top: 100px;
-  padding-bottom: 120px;
-  min-height: 100vh;
+  height: 100vh;
+  padding-top: 80px;
+  box-sizing: border-box;
   background: #080808;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+/* Stage: full-height flex row — arrow | rack | product | arrow */
+.bz-stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: stretch;
+  position: relative;
 }
 
 /* ── Countdown strip ────────────────────────────────────── */
@@ -453,40 +463,57 @@ nav {
   margin-right: 5px;
 }
 
-/* ── Rack section — the centerpiece ────────────────────── */
+/* ── Rack section ───────────────────────────────────────── */
 .bz-rack-section {
+  flex: 0 0 auto;
   display: flex;
-  justify-content: center;
   align-items: flex-start;
-  width: 100%;
-  padding: 4px 0 0;
+  height: 100%;
 }
 
 .bz-rack-wrap {
-  height: 86vh;
-  min-height: 480px;
+  height: 100%;
 }
 
 .bz-rack-svg {
   height: 100%;
   width: auto;
-  max-width: 98vw;
   display: block;
 }
 
-/* ── Product info ───────────────────────────────────────── */
-.bz-product-info {
+/* ── Product panel — right column ───────────────────────── */
+.bz-product-panel {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 40px 24px 60px;
-  text-align: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 40px 52px 40px 36px;
+  overflow-y: auto;
+  opacity: 1;
+  transition: opacity 280ms ease;
 }
 
+.bz-product-panel--fading {
+  opacity: 0;
+}
+
+/* ── Product image placeholder ──────────────────────────── */
+.bz-product-image {
+  position: relative;
+  width: min(220px, 100%);
+  aspect-ratio: 1 / 1;
+  border: 0.5px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.02);
+  flex-shrink: 0;
+  margin-bottom: 6px;
+}
+
+/* ── Product typography ─────────────────────────────────── */
 .bz-product-name {
   font-family: var(--font-italiana), serif;
-  font-size: clamp(36px, 5.5vw, 72px);
+  font-size: clamp(28px, 3.2vw, 58px);
   font-weight: 400;
   color: rgba(224,224,224,0.85);
   letter-spacing: 0.05em;
@@ -496,22 +523,40 @@ nav {
 
 .bz-product-price {
   font-family: var(--font-cinzel), serif;
-  font-size: 10px;
+  font-size: 9px;
   letter-spacing: 0.55em;
   color: rgba(247,197,0,0.58);
-  margin: 8px 0 0;
+  margin: 0;
   text-transform: uppercase;
 }
 
 .bz-product-desc {
   font-family: var(--font-cinzel), serif;
-  font-size: 7.5px;
+  font-size: 7px;
   letter-spacing: 0.26em;
   line-height: 2.1;
   color: rgba(224,224,224,0.24);
   text-transform: uppercase;
   margin: 0;
-  max-width: 300px;
+}
+
+/* ── Position indicator dots ────────────────────────────── */
+.bz-product-dots {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.bz-product-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.18);
+  transition: background 300ms ease;
+}
+
+.bz-product-dot--active {
+  background: rgba(247,197,0,0.55);
 }
 
 /* ── Negotiate button ───────────────────────────────────── */
@@ -525,7 +570,8 @@ nav {
   border: 0.5px solid rgba(247,197,0,0.18);
   padding: 14px 38px;
   cursor: crosshair;
-  margin-top: 20px;
+  margin-top: 6px;
+  align-self: flex-start;
   transition: border-color 380ms ease, color 380ms ease;
 }
 .bz-negotiate:hover {
@@ -552,6 +598,23 @@ nav {
   from { opacity: 0; transform: translateY(-3px); }
   to   { opacity: 1; transform: translateY(0);    }
 }
+
+/* ── Navigation arrows ──────────────────────────────────── */
+.bz-arrow {
+  flex: 0 0 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: crosshair;
+  color: rgba(200,200,200,0.30);
+  transition: color 280ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bz-arrow:hover { color: rgba(200,200,200,0.80); }
+.bz-arrow:active { color: rgba(255,255,255,1); }
 
 /* ── Merchant chat ──────────────────────────────────────── */
 .bz-chat-zone {
@@ -625,16 +688,81 @@ nav {
 }
 
 /* ── Bazaar responsive ──────────────────────────────────── */
-@media (max-width: 768px) {
-  .bz-rack-wrap { height: 74vh; }
+@media (max-width: 860px) {
+  /* Stack vertically: rack on top, product panel below */
+  .bz-main {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
+  .bz-stage {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* Arrows float over the rack area */
+  .bz-arrow {
+    position: absolute;
+    top: 28vh;
+    transform: translateY(-50%);
+    z-index: 10;
+    flex: none;
+    width: 44px;
+    height: 44px;
+  }
+  .bz-arrow--left  { left: 4px; }
+  .bz-arrow--right { right: 4px; }
+
+  .bz-rack-section {
+    flex: 0 0 auto;
+    height: 58vh;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .bz-rack-wrap {
+    height: 100%;
+    width: auto;
+    max-width: 100vw;
+  }
+
+  .bz-rack-svg {
+    height: 100%;
+    width: auto;
+    max-width: 100vw;
+  }
+
+  /* Product panel stacks below rack */
+  .bz-product-panel {
+    padding: 32px 24px 48px;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+  }
+
+  .bz-product-image {
+    width: min(180px, 55vw);
+  }
+
+  .bz-product-name {
+    font-size: clamp(28px, 9vw, 52px);
+  }
+
+  .bz-negotiate {
+    align-self: center;
+  }
+
+  .bz-product-dots {
+    justify-content: center;
+  }
 }
 
 @media (max-width: 480px) {
-  .bz-main          { padding-top: 88px; }
-  .bz-rack-wrap     { height: 64vh; min-height: 340px; }
-  .bz-countdown-strip { font-size: 7px; gap: 10px; letter-spacing: 0.22em; }
-  .bz-chat-zone     { padding: 0 16px; }
-  .bz-decor         { gap: 14px; }
+  .bz-main      { padding-top: 70px; }
+  .bz-rack-section { height: 54vh; }
+  .bz-arrow     { top: 27vh; }
+  .bz-decor     { gap: 14px; }
 }
 
 @media (max-width: 360px) {
