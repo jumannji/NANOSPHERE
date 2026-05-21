@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { subscribeNav } from '@/lib/navTransition'
 import type { NavConfig } from '@/lib/navTransition'
 
-// ── Sphere geometry (identical to NavSphere) ──────────────────────────────────
+// ── Sphere geometry ───────────────────────────────────────────────────────────
 const SEGS = 64
 const SPHERE_CIRCLES = (() => {
   const arr: { pts: number[][] }[] = []
@@ -32,11 +32,16 @@ const SPHERE_CIRCLES = (() => {
 })()
 
 // ── Timing ────────────────────────────────────────────────────────────────────
-const TOTAL_MS = 800   // total animation (sine arch: 0 → peak → 0)
-const NAV_MS   = 360   // navigate just before peak (400ms midpoint)
+const EXPAND_MS   = 520   // sphere lines grow outward
+const CONTRACT_MS = 780   // sphere lines retract
+const TOTAL_MS    = EXPAND_MS + CONTRACT_MS  // 1300ms total
+const NAV_MS      = 460   // navigate while expanding (before peak)
+
+// Smooth one-directional easing — no bounce
+function easeOut(t: number): number { return 1 - Math.pow(1 - t, 3) }
+function easeIn(t: number):  number { return t * t * t }
 
 // ── Overlay ───────────────────────────────────────────────────────────────────
-
 interface OverlayProps { config: NavConfig; onDone: () => void }
 
 function SphereOverlay({ config, onDone }: OverlayProps) {
@@ -59,64 +64,54 @@ function SphereOverlay({ config, onDone }: OverlayProps) {
     canvas.style.height = `${vh}px`
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0)
 
-    // Capture theme colors now, before navigation changes the page
-    const cs      = getComputedStyle(document.documentElement)
-    const bgColor = cs.getPropertyValue('--bg').trim() || '#f0ece0'
-    const srgb    = cs.getPropertyValue('--sphere-rgb').trim() || '18,18,20'
-    const sparts  = srgb.split(',')
-    const sr      = Number(sparts[0])
-    const sg      = Number(sparts[1])
-    const sb      = Number(sparts[2])
+    // Capture theme line color before navigation changes the page
+    const cs   = getComputedStyle(document.documentElement)
+    const srgb = cs.getPropertyValue('--sphere-rgb').trim() || '200,200,200'
+    const [sr, sg, sb] = srgb.split(',').map(Number)
 
-    // Radius to reach the farthest corner from dead-center
-    const maxR = Math.sqrt(cx * cx + cy * cy) * 1.04
+    // Radius needed to reach the farthest viewport corner from center
+    const maxR = Math.sqrt(cx * cx + cy * cy) * 1.06
 
     const start = performance.now()
     let rafId   = 0
 
     const draw = (now: number) => {
-      const tNorm = Math.min((now - start) / TOTAL_MS, 1)
+      const elapsed = now - start
 
-      // Sine arch: 0 at t=0, peak at t=0.5, 0 at t=1 — smooth in and out
-      const R = Math.sin(tNorm * Math.PI) * maxR
+      // Expand with easeOut, contract with easeIn — no bounce
+      let R: number
+      if (elapsed < EXPAND_MS) {
+        R = maxR * easeOut(Math.min(elapsed / EXPAND_MS, 1))
+      } else {
+        const t2 = Math.min((elapsed - EXPAND_MS) / CONTRACT_MS, 1)
+        R = maxR * (1 - easeIn(t2))
+      }
 
       ctx.clearRect(0, 0, vw, vh)
 
-      if (R > 0.5) {
-        // ── Filled circle in current theme background ─────────────────────
-        ctx.fillStyle = bgColor
-        ctx.beginPath()
-        ctx.arc(cx, cy, R, 0, Math.PI * 2)
-        ctx.fill()
-
-        // ── Wireframe sphere clipped inside the circle ────────────────────
-        ctx.save()
-        ctx.beginPath()
-        ctx.arc(cx, cy, R, 0, Math.PI * 2)
-        ctx.clip()
-
-        const sphereR = R * 0.86
-        const ay      = now * 0.00012
-        const ax      = Math.sin(now * 0.00007) * 0.28
-        const cosY    = Math.cos(ay), sinY = Math.sin(ay)
-        const cosX    = Math.cos(ax), sinX = Math.sin(ax)
+      if (R > 1) {
+        // Slow, graceful rotation
+        const ay   = now * 0.00009
+        const ax   = Math.sin(now * 0.00005) * 0.20
+        const cosY = Math.cos(ay), sinY = Math.sin(ay)
+        const cosX = Math.cos(ax), sinX = Math.sin(ax)
 
         const proj = (p: number[]) => {
-          const rx = p[0] * cosY + p[2] * sinY
-          let   rz = -p[0] * sinY + p[2] * cosY
-          const ry = p[1] * cosX - rz * sinX
-          rz        = p[1] * sinX + rz * cosX
-          return { x: cx + rx * sphereR, y: cy + ry * sphereR, z: rz }
+          const rx  = p[0] * cosY + p[2] * sinY
+          let   rz  = -p[0] * sinY + p[2] * cosY
+          const ry  = p[1] * cosX - rz * sinX
+          rz         = p[1] * sinX + rz * cosX
+          return { x: cx + rx * R, y: cy + ry * R, z: rz }
         }
 
-        ctx.lineWidth = 0.8
+        ctx.lineWidth = 1.1
         for (const c of SPHERE_CIRCLES) {
           const pts = c.pts.map(proj)
           for (let i = 0; i < pts.length; i++) {
             const a  = pts[i]
             const b  = pts[(i + 1) % pts.length]
-            // Depth-based opacity — higher range than NavSphere for visibility
-            const op = 0.06 + ((a.z + b.z) * 0.5 + 1) * 0.5 * 0.42
+            // Depth-based opacity: lines facing viewer are brighter
+            const op = 0.12 + ((a.z + b.z) * 0.5 + 1) * 0.5 * 0.55
             ctx.strokeStyle = `rgba(${sr},${sg},${sb},${op.toFixed(3)})`
             ctx.beginPath()
             ctx.moveTo(a.x, a.y)
@@ -124,18 +119,9 @@ function SphereOverlay({ config, onDone }: OverlayProps) {
             ctx.stroke()
           }
         }
-
-        // Outer ring at sphere equator
-        ctx.strokeStyle = `rgba(${sr},${sg},${sb},0.4)`
-        ctx.lineWidth   = 1
-        ctx.beginPath()
-        ctx.arc(cx, cy, sphereR, 0, Math.PI * 2)
-        ctx.stroke()
-
-        ctx.restore()
       }
 
-      if (tNorm < 1) {
+      if (elapsed < TOTAL_MS) {
         rafId = requestAnimationFrame(draw)
       } else {
         onDone()
@@ -165,7 +151,6 @@ function SphereOverlay({ config, onDone }: OverlayProps) {
 }
 
 // ── Root component ─────────────────────────────────────────────────────────────
-
 export default function SphereTransitionOverlay() {
   const [config,  setConfig ] = useState<NavConfig | null>(null)
   const [mounted, setMounted] = useState(false)
