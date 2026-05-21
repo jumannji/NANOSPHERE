@@ -1,48 +1,55 @@
 'use client'
 
-const CX = 300, CY = 195, RX = 235, RY = 74
+const CX = 350, CY = 215
+const RX = 310, RY = 65
+const RING_DEG  = -8
+const RING_RAD  = (RING_DEG * Math.PI) / 180
+const POLE_L    = 230, POLE_R = 470   // 240px wide column
 
+// Point on the unrotated ring ellipse
 function pt(deg: number): [number, number] {
   const r = (deg * Math.PI) / 180
   return [CX + RX * Math.cos(r), CY + RY * Math.sin(r)]
 }
 
+// Point on the ring after the -8° tilt, in screen coordinates
+function ptR(deg: number): [number, number] {
+  const [x0, y0] = pt(deg)
+  const dx = x0 - CX, dy = y0 - CY
+  const c = Math.cos(RING_RAD), s = Math.sin(RING_RAD)
+  return [CX + dx * c - dy * s, CY + dx * s + dy * c]
+}
+
 function Hanger({ deg, scale = 1, opacity = 1 }: {
   deg: number; scale?: number; opacity?: number
 }) {
-  const [x, y] = pt(deg)
-  const W  = 78 * scale
-  const H  = 62 * scale
-  const hk = 24 * scale
-  const sw = 3.5
+  const [x, y] = ptR(deg)
+  const W  = 95 * scale
+  const H  = 78 * scale
+  const hk = 28 * scale
+  const sw = 4.2
   const col = 'rgba(228,228,228,0.92)'
 
   return (
     <g opacity={opacity}>
-      {/* Hook stem */}
       <line x1={x} y1={y + 2} x2={x} y2={y - hk}
-        stroke={col} strokeWidth={sw * 0.72} strokeLinecap="round" />
-      {/* Hook curl */}
+        stroke={col} strokeWidth={sw * 0.70} strokeLinecap="round" />
       <path
-        d={`M ${x},${y - hk} Q ${x + 8 * scale},${y - hk} ${x + 5 * scale},${y - hk - 14 * scale}`}
-        fill="none" stroke={col} strokeWidth={sw * 0.65} strokeLinecap="round"
+        d={`M ${x},${y - hk} Q ${x + 9 * scale},${y - hk} ${x + 6 * scale},${y - hk - 16 * scale}`}
+        fill="none" stroke={col} strokeWidth={sw * 0.62} strokeLinecap="round"
       />
-      {/* Left arm */}
       <line x1={x} y1={y} x2={x - W} y2={y + H}
         stroke={col} strokeWidth={sw} strokeLinecap="round" />
-      {/* Right arm */}
       <line x1={x} y1={y} x2={x + W} y2={y + H}
         stroke={col} strokeWidth={sw} strokeLinecap="round" />
-      {/* Crossbar */}
       <line x1={x - W} y1={y + H} x2={x + W} y2={y + H}
-        stroke={col} strokeWidth={sw * 0.6} strokeLinecap="round" />
-      {/* Garment */}
+        stroke={col} strokeWidth={sw * 0.58} strokeLinecap="round" />
       <rect
-        x={x - W + 5} y={y + H}
-        width={W * 2 - 10} height={H * 1.55}
+        x={x - W + 6} y={y + H}
+        width={W * 2 - 12} height={H * 1.55}
         fill="rgba(255,255,255,0.05)"
         stroke="rgba(255,255,255,0.16)"
-        strokeWidth="0.75"
+        strokeWidth="0.9"
         rx="2"
       />
     </g>
@@ -50,6 +57,7 @@ function Hanger({ deg, scale = 1, opacity = 1 }: {
 }
 
 export default function ClothingRack() {
+  // Highlight arc: top of ring in unrotated coords (used inside the rotated group)
   const [hlx1, hly1] = pt(228)
   const [hlx2, hly2] = pt(312)
 
@@ -57,117 +65,89 @@ export default function ClothingRack() {
     <div className="bz-rack-wrap">
       <svg
         className="bz-rack-svg"
-        viewBox="0 0 600 960"
+        viewBox="0 0 700 1000"
         xmlns="http://www.w3.org/2000/svg"
         aria-label="Clothing rack"
         role="img"
       >
         <defs>
-          {/* White cylinder gradient for pole */}
+          {/* White cylinder gradient — pole edges dark, center bright */}
           <linearGradient id="poleGrad" gradientUnits="userSpaceOnUse"
-            x1={CX - 13} y1="0" x2={CX + 13} y2="0">
-            <stop offset="0%"   stopColor="#111111" />
-            <stop offset="18%"  stopColor="#777777" />
-            <stop offset="40%"  stopColor="#d8d8d8" />
+            x1={POLE_L} y1="0" x2={POLE_R} y2="0">
+            <stop offset="0%"   stopColor="#080808" />
+            <stop offset="14%"  stopColor="#585858" />
+            <stop offset="37%"  stopColor="#d2d2d2" />
             <stop offset="50%"  stopColor="#ffffff" />
-            <stop offset="60%"  stopColor="#d8d8d8" />
-            <stop offset="82%"  stopColor="#777777" />
-            <stop offset="100%" stopColor="#111111" />
+            <stop offset="63%"  stopColor="#d2d2d2" />
+            <stop offset="86%"  stopColor="#585858" />
+            <stop offset="100%" stopColor="#080808" />
           </linearGradient>
 
-          {/* White metallic gradient for ring */}
-          <linearGradient id="ringGrad" gradientUnits="userSpaceOnUse"
-            x1={CX - RX} y1={CY} x2={CX + RX} y2={CY}>
-            <stop offset="0%"   stopColor="#1e1e1e" />
-            <stop offset="14%"  stopColor="#848484" />
-            <stop offset="36%"  stopColor="#d0d0d0" />
-            <stop offset="50%"  stopColor="#f8f8f8" />
-            <stop offset="64%"  stopColor="#d0d0d0" />
-            <stop offset="86%"  stopColor="#848484" />
-            <stop offset="100%" stopColor="#1e1e1e" />
-          </linearGradient>
-
-          {/* Pole glow */}
+          {/* Pole glow blur — wide soft halo behind the column */}
           <filter id="poleGlow" filterUnits="userSpaceOnUse"
-            x="238" y="178" width="124" height="804">
-            <feGaussianBlur stdDeviation="12" />
-          </filter>
-
-          {/* Ring glow */}
-          <filter id="ringGlow" filterUnits="userSpaceOnUse"
-            x="28" y="82" width="544" height="244">
-            <feGaussianBlur stdDeviation="8" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
+            x="100" y="190" width="500" height="850">
+            <feGaussianBlur stdDeviation="22" />
           </filter>
         </defs>
 
-        {/* ── Back hangers (occluded by ring fill) ── */}
-        <Hanger deg={270} scale={0.52} opacity={0.18} />
-        <Hanger deg={315} scale={0.68} opacity={0.28} />
-        <Hanger deg={225} scale={0.68} opacity={0.28} />
+        {/* ── Back hangers (drawn before ring fill so ring occludes them) ── */}
+        <Hanger deg={270} scale={0.50} opacity={0.14} />
+        <Hanger deg={295} scale={0.65} opacity={0.20} />
+        <Hanger deg={245} scale={0.65} opacity={0.20} />
 
-        {/* ── Pole glow behind the pole ── */}
+        {/* ── Pole glow — diffuse white halo behind the monolith ── */}
         <rect
-          x={CX - 13} y={CY} width={26} height={960 - CY}
-          fill="rgba(255,255,255,0.22)"
+          x={POLE_L} y={CY} width={POLE_R - POLE_L} height={1000 - CY}
+          fill="rgba(255,255,255,0.18)"
           filter="url(#poleGlow)"
         />
 
-        {/* ── Thick white pole ── */}
+        {/* ── The monolith — 240px wide white column ── */}
         <rect
-          x={CX - 13} y={CY} width={26} height={960 - CY}
+          x={POLE_L} y={CY - 2} width={POLE_R - POLE_L} height={1000 - CY + 2}
           fill="url(#poleGrad)"
         />
 
-        {/* ── Ring: dark interior (occludes back hangers) ── */}
-        <ellipse cx={CX} cy={CY} rx={RX} ry={RY} fill="#080808" />
+        {/* ── Tilted floating ring ── all elements share the -8° rotation ── */}
+        <g transform={`rotate(${RING_DEG}, ${CX}, ${CY})`}>
 
-        {/* ── Ring: wide ambient glow ── */}
-        <ellipse cx={CX} cy={CY} rx={RX} ry={RY}
-          fill="none"
-          stroke="rgba(255,255,255,0.06)"
-          strokeWidth={32}
-        />
+          {/* Dark interior — occludes back hangers and creates tube depth */}
+          <ellipse cx={CX} cy={CY} rx={RX} ry={RY} fill="#060606" />
 
-        {/* ── Ring: main tube with glow ── */}
-        <ellipse cx={CX} cy={CY} rx={RX} ry={RY}
-          fill="none"
-          stroke="url(#ringGrad)"
-          strokeWidth={12}
-          filter="url(#ringGlow)"
-        />
+          {/* Outer diffuse glow */}
+          <ellipse cx={CX} cy={CY} rx={RX} ry={RY}
+            fill="none" stroke="rgba(255,255,255,0.045)" strokeWidth="50" />
 
-        {/* ── Ring: top specular highlight ── */}
-        <path
-          d={`M ${hlx1},${hly1} A ${RX},${RY} 0 0 1 ${hlx2},${hly2}`}
-          fill="none"
-          stroke="rgba(255,255,255,0.62)"
-          strokeWidth="3.5"
-          strokeLinecap="round"
-        />
+          {/* Inner atmospheric glow */}
+          <ellipse cx={CX} cy={CY} rx={RX} ry={RY}
+            fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="26" />
 
-        {/* ── Ring: underside depth shadow ── */}
-        <ellipse cx={CX} cy={CY + 8} rx={RX - 2} ry={RY - 2}
-          fill="none"
-          stroke="rgba(0,0,0,0.55)"
-          strokeWidth="5"
-        />
+          {/* Main tube — crisp white ring */}
+          <ellipse cx={CX} cy={CY} rx={RX} ry={RY}
+            fill="none" stroke="rgba(215,215,215,0.92)" strokeWidth="14" />
 
-        {/* ── Front hangers ── */}
-        <Hanger deg={180} scale={0.76} opacity={0.46} />
-        <Hanger deg={0}   scale={0.76} opacity={0.46} />
-        <Hanger deg={135} scale={0.88} opacity={0.66} />
-        <Hanger deg={45}  scale={0.88} opacity={0.66} />
+          {/* Top specular — bright arc where light catches the tube */}
+          <path
+            d={`M ${hlx1},${hly1} A ${RX},${RY} 0 0 1 ${hlx2},${hly2}`}
+            fill="none"
+            stroke="rgba(255,255,255,0.70)"
+            strokeWidth="4"
+            strokeLinecap="round"
+          />
+
+          {/* Underside depth shadow */}
+          <ellipse cx={CX} cy={CY + 9} rx={RX - 2} ry={RY - 2}
+            fill="none" stroke="rgba(0,0,0,0.48)" strokeWidth="6" />
+
+        </g>
+
+        {/* ── Front hangers — hang vertically from tilted ring positions ── */}
         <Hanger deg={90}  scale={1.00} opacity={1.00} />
+        <Hanger deg={65}  scale={0.88} opacity={0.66} />
+        <Hanger deg={115} scale={0.88} opacity={0.66} />
+        <Hanger deg={40}  scale={0.76} opacity={0.44} />
+        <Hanger deg={140} scale={0.76} opacity={0.44} />
 
-        {/* ── Pole–ring junction collar ── */}
-        <ellipse cx={CX} cy={CY} rx={18} ry={9}   fill="#aaaaaa" />
-        <ellipse cx={CX} cy={CY} rx={14} ry={7}   fill="#cccccc" />
-        <ellipse cx={CX} cy={CY} rx={9}  ry={4.5} fill="#eeeeee" />
-        <ellipse cx={CX} cy={CY} rx={5}  ry={2.5} fill="#ffffff" />
       </svg>
     </div>
   )

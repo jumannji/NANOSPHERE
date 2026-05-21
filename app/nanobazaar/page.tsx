@@ -1,38 +1,14 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Nav from '@/components/Nav'
 import ClothingRack from '@/components/ClothingRack'
-
-const END_DATE = new Date('2026-05-21T00:00:00')
 
 const PRODUCTS = [
   { id: 'hoodie',     name: 'Hoodie',     price: 85, desc: 'Oversized, drop-shoulder silhouette.' },
   { id: 'tshirt',     name: 'T-Shirt',    price: 45, desc: 'Heavyweight cotton, boxy fit.'        },
   { id: 'sweatpants', name: 'Sweatpants', price: 65, desc: 'Tapered leg, drawstring waist.'       },
 ] as const
-
-function useCountdown(end: Date) {
-  const [rem, setRem] = useState({ days: 0, hours: 0, mins: 0, secs: 0 })
-  useEffect(() => {
-    function tick() {
-      const diff = Math.max(0, end.getTime() - Date.now())
-      const s = Math.floor(diff / 1000)
-      setRem({
-        days:  Math.floor(s / 86400),
-        hours: Math.floor((s % 86400) / 3600),
-        mins:  Math.floor((s % 3600)  / 60),
-        secs:  s % 60,
-      })
-    }
-    tick()
-    const id = setInterval(tick, 1000)
-    return () => clearInterval(id)
-  }, [end])
-  return rem
-}
-
-function pad(n: number) { return String(n).padStart(2, '0') }
 
 // Minimal diamond pendant SVG
 function Diamond() {
@@ -55,7 +31,6 @@ function Cross() {
 }
 
 export default function NanoBazaarPage() {
-  const { days, hours, mins, secs } = useCountdown(END_DATE)
   const [current]     = useState(0)
   const [negotiating, setNegotiating] = useState(false)
 
@@ -98,18 +73,6 @@ export default function NanoBazaarPage() {
 
       <main className="bz-main">
 
-        {/* ── Countdown strip ──────────────────────────────── */}
-        <div className="bz-countdown-strip" aria-label="Collection countdown">
-          <span className="bz-cd-label-text">OG Collection</span>
-          <span className="bz-cd-rule" aria-hidden>—</span>
-          <span className="bz-cd-nums">
-            {pad(days)}<small>D</small>
-            {pad(hours)}<small>H</small>
-            {pad(mins)}<small>M</small>
-            {pad(secs)}<small>S</small>
-          </span>
-        </div>
-
         {/* ── Rack — the centerpiece ───────────────────────── */}
         <section className="bz-rack-section" aria-label="Clothing rack">
           <ClothingRack />
@@ -129,7 +92,6 @@ export default function NanoBazaarPage() {
         </section>
 
         {/* ── Merchant chat ─────────────────────────────────── */}
-        {/* ↓ Replace .bz-chat-inner contents with chat component when ready ↓ */}
         <section className="bz-chat-zone" aria-label="Merchant chat">
           <div className="bz-chat-inner">
             <span className="bz-chat-tag">Merchant Chat</span>
