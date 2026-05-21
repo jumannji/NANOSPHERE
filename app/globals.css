@@ -459,19 +459,18 @@ nav {
   justify-content: center;
   align-items: flex-start;
   width: 100%;
-  padding: 8px 0 0;
+  padding: 4px 0 0;
 }
 
 .bz-rack-wrap {
-  height: 66vh;
-  max-height: 740px;
-  min-height: 380px;
+  height: 86vh;
+  min-height: 480px;
 }
 
 .bz-rack-svg {
   height: 100%;
   width: auto;
-  max-width: 94vw;
+  max-width: 98vw;
   display: block;
 }
 
@@ -627,12 +626,12 @@ nav {
 
 /* ── Bazaar responsive ──────────────────────────────────── */
 @media (max-width: 768px) {
-  .bz-rack-wrap { height: 56vh; }
+  .bz-rack-wrap { height: 74vh; }
 }
 
 @media (max-width: 480px) {
   .bz-main          { padding-top: 88px; }
-  .bz-rack-wrap     { height: 50vh; min-height: 300px; }
+  .bz-rack-wrap     { height: 64vh; min-height: 340px; }
   .bz-countdown-strip { font-size: 7px; gap: 10px; letter-spacing: 0.22em; }
   .bz-chat-zone     { padding: 0 16px; }
   .bz-decor         { gap: 14px; }
