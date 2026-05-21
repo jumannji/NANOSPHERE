@@ -1,4 +1,7 @@
-export interface NavConfig { href: string }
+export interface NavConfig {
+  href: string
+  fromHome?: boolean   // true when navigating away from the homepage
+}
 
 type Listener = (cfg: NavConfig | null) => void
 const listeners = new Set<Listener>()
