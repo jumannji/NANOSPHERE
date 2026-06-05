@@ -32,6 +32,28 @@
   --sphere-rgb: 8,1,0;
 }
 
+/* ── Green theme — Articles page: all text → pink ─────────────────────────── */
+[data-theme="4"] .articles-page-nav,
+[data-theme="4"] .mag-main {
+  --nav-ink: rgb(255, 54, 219);
+}
+
+[data-theme="4"] .mag-cover-num,
+[data-theme="4"] .mag-cover-title,
+[data-theme="4"] .mag-modal-left-num,
+[data-theme="4"] .mag-modal-left-title,
+[data-theme="4"] .mag-modal-eyebrow,
+[data-theme="4"] .mag-modal-title,
+[data-theme="4"] .mag-meta-row,
+[data-theme="4"] .mag-close {
+  color: rgb(255, 54, 219);
+}
+
+[data-theme="4"] .mag-read-btn {
+  background: var(--ink);
+  color: rgb(255, 54, 219);
+}
+
 html, body {
   height: 100%;
   width: 100%;
