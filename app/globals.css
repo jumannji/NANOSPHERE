@@ -34,11 +34,9 @@
 
 /* ── Green theme — Articles page ─────────────────────────────────────────── */
 
-/* Nav: black bar, black elements */
+/* Nav: green background, black text */
 [data-theme="4"] .articles-page-nav {
-  background: #0f0f10;
   --nav-ink: #0f0f10;
-  --sphere-rgb: 8,1,0;
 }
 
 /* Content below nav: pink */
