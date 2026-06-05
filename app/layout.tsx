@@ -30,8 +30,8 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'NanoSphere — Cultural Transmission',
-  description: 'NanoSphere — Cultural Transmission',
+  title: 'NanoSphere',
+  description: 'NanoSphere',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
