@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import { useEffect, useRef } from 'react'
-import { firePaper } from '@/lib/paperTransition'
+import { useRouter } from 'next/navigation'
+import { navigateTo } from '@/lib/navigate'
 
 const SPHERE_CIRCLES = (() => {
   const arr: { pts: number[][] }[] = []
@@ -36,6 +37,7 @@ interface Props {
 }
 
 export default function ArticleSphere({ title, href }: Props) {
+  const router    = useRouter()
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -85,18 +87,8 @@ export default function ArticleSphere({ title, href }: Props) {
 
   function handleClick(e: React.MouseEvent<HTMLAnchorElement>) {
     // Honour reduced-motion — fall through to normal Link navigation
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-
     e.preventDefault()
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const r = canvas.getBoundingClientRect()
-    firePaper({
-      origin: { left: r.left, top: r.top, width: r.width, height: r.height },
-      href,
-      title,
-    })
+    navigateTo(href, h => router.push(h))
   }
 
   return (

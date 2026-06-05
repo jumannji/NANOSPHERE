@@ -768,3 +768,18 @@ nav {
 @media (max-width: 360px) {
   .bz-decor { display: none; }
 }
+
+/* ── Page crossfade via View Transitions API ─────────────────────────────────
+   Chrome / Edge / Safari 18+: old page fades out while new page fades in.
+   Firefox and older browsers: instant navigation (no flash, no animation).    */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) {
+    animation: 300ms ease-out vt-fade-out;
+  }
+  ::view-transition-new(root) {
+    animation: 300ms ease-in  vt-fade-in;
+  }
+}
+
+@keyframes vt-fade-out { to   { opacity: 0 } }
+@keyframes vt-fade-in  { from { opacity: 0 } }

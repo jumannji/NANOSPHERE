@@ -1,8 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Cinzel, Italiana, Press_Start_2P } from 'next/font/google'
 import './globals.css'
-import PaperTransitionOverlay from '@/components/PaperTransitionOverlay'
-import SphereTransitionOverlay from '@/components/SphereTransitionOverlay'
 import DynamicFavicon from '@/components/DynamicFavicon'
 
 const cinzel = Cinzel({
@@ -47,8 +45,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         {children}
         <DynamicFavicon />
-        <PaperTransitionOverlay />
-        <SphereTransitionOverlay />
       </body>
     </html>
   )

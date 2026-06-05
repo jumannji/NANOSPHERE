@@ -1,15 +1,17 @@
 'use client'
 
 import Link from 'next/link'
-import { fireNav } from '@/lib/navTransition'
+import { useRouter } from 'next/navigation'
+import { navigateTo } from '@/lib/navigate'
 
 type Props = React.ComponentPropsWithoutRef<typeof Link> & { href: string }
 
 export default function TransitionLink({ href, children, ...rest }: Props) {
+  const router = useRouter()
+
   function handleClick(e: React.MouseEvent<HTMLAnchorElement>) {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     e.preventDefault()
-    fireNav({ href })
+    navigateTo(href, h => router.push(h))
   }
 
   return (

@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import NavSphere from './NavSphere'
 import TransitionLink from './TransitionLink'
-import { fireNav } from '@/lib/navTransition'
+import { navigateTo } from '@/lib/navigate'
 
 interface NavProps { showSphere?: boolean }
 
@@ -16,11 +16,7 @@ export default function Nav({ showSphere = false }: NavProps) {
     if (!revealed) {
       setRevealed(true)
     } else {
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        router.push('/')
-      } else {
-        fireNav({ href: '/' })
-      }
+      navigateTo('/', h => router.push(h))
     }
   }
 
