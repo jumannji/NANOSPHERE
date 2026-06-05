@@ -210,18 +210,35 @@ nav {
 /* ── Articles page nav ───────────────────────────────────────────────────── */
 
 .articles-page-nav {
-  flex-direction: row !important;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 40px;
-  height: 72px;
-  gap: 0;
-  /* Scroll-fold animation */
-  transition: transform 340ms cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--bg);
+  z-index: 20;
 }
 
-.articles-page-nav--hidden {
-  transform: translateY(-100%);
+/* Desktop layout div — hidden on mobile, shown ≥769px */
+.articles-desktop-nav {
+  display: none;
+}
+
+/* Desktop: row layout, title left, sphere+links right */
+@media (min-width: 769px) {
+  .articles-page-nav {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 40px;
+    height: 72px;
+    gap: 0;
+  }
+  .articles-desktop-nav {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+  .articles-mobile-nav {
+    display: none;
+  }
 }
 
 .articles-page-nav-title {
@@ -243,8 +260,8 @@ nav {
 
 /* The sliding links container — inherits nav-links typography */
 .articles-nav-links {
-  gap: 32px;          /* tighter than the default 72px */
-  padding-right: 18px; /* breathing room between last link and sphere */
+  gap: 32px;
+  padding-right: 18px;
 }
 
 /* ── Magazine articles layout ────────────────────────────────────────────── */
@@ -272,12 +289,12 @@ nav {
 }
 
 .mag-vol-title {
-  font-family: var(--font-italiana), serif;
+  font-family: var(--font-press-start), monospace;
   font-weight: 400;
-  font-size: clamp(52px, 7vw, 96px);
+  font-size: clamp(12px, 1.6vw, 20px);
   color: var(--nav-ink);
-  letter-spacing: 0.02em;
-  line-height: 1;
+  letter-spacing: 0.04em;
+  line-height: 1.8;
   white-space: nowrap;
 }
 
@@ -294,7 +311,7 @@ nav {
 .mag-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  gap: 22px;
 }
 
 .mag-card {
@@ -382,7 +399,7 @@ nav {
   width: 100%;
   max-width: 800px;
   display: grid;
-  grid-template-columns: 5fr 7fr;
+  grid-template-columns: 6fr 5fr;
   position: relative;
   overflow: hidden;
   animation: mag-slide-in 320ms cubic-bezier(0.22,1,0.36,1);
@@ -416,7 +433,7 @@ nav {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 340px;
+  min-height: 400px;
   position: relative;
 }
 .mag-modal-left::before {
@@ -457,9 +474,10 @@ nav {
 }
 
 .mag-modal-eyebrow {
-  font-family: var(--font-cinzel), serif;
-  font-size: 8px;
-  letter-spacing: 0.34em;
+  font-family: var(--font-press-start), monospace;
+  font-size: 7px;
+  line-height: 2;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--bg);
   opacity: 0.38;
@@ -467,12 +485,12 @@ nav {
 }
 
 .mag-modal-title {
-  font-family: var(--font-italiana), serif;
+  font-family: var(--font-press-start), monospace;
   font-weight: 400;
-  font-size: clamp(36px, 4.8vw, 60px);
+  font-size: clamp(11px, 1.5vw, 16px);
   color: var(--bg);
-  line-height: 1.05;
-  letter-spacing: 0.02em;
+  line-height: 2;
+  letter-spacing: 0.04em;
   opacity: 0.92;
 }
 
@@ -560,17 +578,12 @@ nav {
   /* Corner brackets overlap the nav at tablet/mobile widths — hide them */
   .corner { display: none; }
 
-  .articles-page-nav { padding: 0 24px; height: 62px; }
-  .articles-page-nav-title { font-size: 7px; }
-  .articles-nav-links { gap: 22px; padding-right: 14px; }
-
   .mag-main { padding: 80px 28px 60px; gap: 52px; }
-  .mag-vol-title { font-size: clamp(40px, 7vw, 72px); }
-  .mag-row { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .mag-row { grid-template-columns: repeat(2, 1fr); gap: 14px; }
   .mag-modal { grid-template-columns: 1fr; max-width: 420px; }
   .mag-modal-left { min-height: 200px; border-right: none; border-bottom: 0.5px solid rgba(127,127,127,0.10); }
   .mag-modal-right { padding: 36px 32px; gap: 16px; }
-  .mag-modal-title { font-size: clamp(28px, 5vw, 44px); }
+  .mag-modal-title { font-size: 13px; }
 }
 
 /* Mobile — 480px (covers iPhone 14 at 390px and similar) */
@@ -604,12 +617,7 @@ nav {
     letter-spacing: 0.14em;
   }
 
-  .articles-page-nav { padding: 0 16px; height: 56px; }
-  .articles-page-nav-title { display: none; }
-  .articles-nav-links { gap: 16px; padding-right: 12px; }
-
   .mag-main { padding: 70px 16px 48px; gap: 40px; }
-  .mag-vol-title { font-size: clamp(36px, 10vw, 60px); }
   .mag-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .mag-cover-title { font-size: 14px; }
   .mag-modal-right { padding: 28px 24px; gap: 14px; }
