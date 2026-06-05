@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ARTICLES, getArticlesByVolume, toRoman } from '@/lib/articles'
+import { getArticlesByVolume, toRoman } from '@/lib/articles'
 import { navigateTo } from '@/lib/navigate'
 import type { Article } from '@/lib/articles'
 
@@ -22,7 +22,6 @@ function MagCard({ article, onSelect }: { article: Article; onSelect: () => void
 function MagOverlay({ article, onClose }: { article: Article; onClose: () => void }) {
   const router = useRouter()
 
-  // Close on Escape
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', handler)
@@ -34,25 +33,31 @@ function MagOverlay({ article, onClose }: { article: Article; onClose: () => voi
       <div className="mag-modal" onClick={e => e.stopPropagation()}>
         <button className="mag-close" onClick={onClose} aria-label="Close">✕</button>
 
-        <div className="mag-modal-cover">
-          <span className="mag-modal-num">
-            Volume&nbsp;{toRoman(article.volume)}&nbsp;·&nbsp;Article&nbsp;{article.articleInVolume}
+        {/* Left — portrait cover preview */}
+        <div className="mag-modal-left">
+          <span className="mag-modal-left-num">
+            Vol.&nbsp;{toRoman(article.volume)}&nbsp;·&nbsp;{article.articleInVolume}
           </span>
+          <h3 className="mag-modal-left-title">{article.title}</h3>
+        </div>
+
+        {/* Right — article info */}
+        <div className="mag-modal-right">
+          <div className="mag-modal-eyebrow">
+            Volume&nbsp;{toRoman(article.volume)}&nbsp;·&nbsp;Article&nbsp;{article.articleInVolume}
+          </div>
           <h2 className="mag-modal-title">{article.title}</h2>
+          <div className="mag-modal-meta">
+            <span className="mag-meta-row">{article.date}</span>
+            <span className="mag-meta-row">{article.wordCount.toLocaleString()} words</span>
+          </div>
+          <button
+            className="mag-read-btn"
+            onClick={() => navigateTo(`/articles/${article.slug}`, h => router.push(h))}
+          >
+            Read
+          </button>
         </div>
-
-        <div className="mag-modal-meta">
-          <span className="mag-meta-item">{article.date}</span>
-          <span className="mag-meta-sep">·</span>
-          <span className="mag-meta-item">{article.wordCount.toLocaleString()} words</span>
-        </div>
-
-        <button
-          className="mag-read-btn"
-          onClick={() => navigateTo(`/articles/${article.slug}`, h => router.push(h))}
-        >
-          Read
-        </button>
       </div>
     </div>
   )
@@ -67,9 +72,10 @@ export default function ArticlesContent() {
       <main className="mag-main">
         {volumes.map(([vol, articles]) => (
           <section key={vol} className="mag-volume">
-            <div className="mag-volume-label">
-              <span>Volume&nbsp;{toRoman(vol)}</span>
-            </div>
+            <header className="mag-vol-header">
+              <h2 className="mag-vol-title">Volume&nbsp;{toRoman(vol)}</h2>
+              <div className="mag-vol-rule" aria-hidden />
+            </header>
             <div className="mag-row">
               {articles.map(article => (
                 <MagCard
