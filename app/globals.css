@@ -32,8 +32,16 @@
   --sphere-rgb: 8,1,0;
 }
 
-/* ── Green theme — Articles page: all text → pink ─────────────────────────── */
-[data-theme="4"] .articles-page-nav,
+/* ── Green theme — Articles page ─────────────────────────────────────────── */
+
+/* Nav: black bar, black elements */
+[data-theme="4"] .articles-page-nav {
+  background: #0f0f10;
+  --nav-ink: #0f0f10;
+  --sphere-rgb: 8,1,0;
+}
+
+/* Content below nav: pink */
 [data-theme="4"] .mag-main {
   --nav-ink: rgb(255, 54, 219);
 }
