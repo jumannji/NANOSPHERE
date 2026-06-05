@@ -313,10 +313,10 @@ nav {
 .mag-vol-title {
   font-family: var(--font-press-start), monospace;
   font-weight: 400;
-  font-size: clamp(12px, 1.6vw, 20px);
+  font-size: clamp(28px, 5vw, 72px);
   color: var(--nav-ink);
   letter-spacing: 0.04em;
-  line-height: 1.8;
+  line-height: 1.2;
   white-space: nowrap;
 }
 
@@ -334,6 +334,7 @@ nav {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 22px;
+  padding: 0 32px;
 }
 
 .mag-card {
@@ -601,7 +602,7 @@ nav {
   .corner { display: none; }
 
   .mag-main { padding: 80px 28px 60px; gap: 52px; }
-  .mag-row { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .mag-row { grid-template-columns: repeat(2, 1fr); gap: 14px; padding: 0; }
   .mag-modal { grid-template-columns: 1fr; max-width: 420px; }
   .mag-modal-left { min-height: 200px; border-right: none; border-bottom: 0.5px solid rgba(127,127,127,0.10); }
   .mag-modal-right { padding: 36px 32px; gap: 16px; }
@@ -640,7 +641,7 @@ nav {
   }
 
   .mag-main { padding: 70px 16px 48px; gap: 40px; }
-  .mag-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .mag-row { grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 0; }
   .mag-cover-title { font-size: 14px; }
   .mag-modal-right { padding: 28px 24px; gap: 14px; }
   .mag-modal-title { font-size: 28px; }
