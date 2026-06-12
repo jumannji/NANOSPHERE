@@ -57,7 +57,9 @@ export default function HeroCanvas() {
 
     function resize() {
       DPR = Math.min(window.devicePixelRatio || 1, 2)
-      W = window.innerWidth; H = window.innerHeight
+      const el = ringsCanvas.parentElement
+      W = el ? el.offsetWidth  : window.innerWidth
+      H = el ? el.offsetHeight : window.innerHeight
       for (const c of [ringsCanvas, sphereCanvas]) {
         c.width  = Math.floor(W * DPR); c.height = Math.floor(H * DPR)
         c.style.width = W + 'px';       c.style.height = H + 'px'
@@ -290,10 +292,10 @@ export default function HeroCanvas() {
   }, [])
 
   return (
-    <main style={{ position: 'relative', width: '100vw', height: '100dvh', overflow: 'hidden' }}>
+    <main style={{ position: 'relative', width: '100%', height: '100dvh', overflow: 'hidden', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
       <canvas ref={ringsRef}  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 }} />
       <canvas ref={sphereRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 2 }} />
-      <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', zIndex: 3, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <div style={{ position: 'relative', zIndex: 3, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         <div
           ref={logoRef}
           style={{

@@ -150,12 +150,14 @@ nav {
 }
 .nav-links a.pill:hover .pill-label { color: #fafafa; }
 
-/* Inner-page nav: 3-col grid keeps sphere pinned at structural center */
+/* Inner-page nav: 3-col grid keeps sphere pinned at structural center.
+   minmax(0,1fr) forces equal columns regardless of content width —
+   prevents the wider NanoBazaar pill from expanding the left column. */
 .nav-links--sphere {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   column-gap: 48px;
-  width: 100%;   /* fill the nav's content-box so the center column = 50% */
+  width: 100%;
 }
 
 .nav-group-left,
