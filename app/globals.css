@@ -240,6 +240,13 @@ nav {
 .articles-page-nav {
   background: var(--bg);
   z-index: 20;
+  transition: opacity 380ms ease;
+}
+
+/* Nav hidden while intro is active */
+html.articles-intro-active .articles-page-nav {
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* Desktop layout div — hidden on mobile, shown ≥769px */
@@ -557,6 +564,92 @@ nav {
   transition: opacity 200ms ease;
 }
 .mag-read-btn:hover { opacity: 0.76; }
+
+/* ── Articles intro entry experience ─────────────────────────────────────── */
+
+.mag-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  cursor: crosshair;
+  transition: opacity 520ms ease, transform 660ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mag-intro--exit {
+  opacity: 0;
+  transform: translateY(-30vh);
+  pointer-events: none;
+}
+
+/* Volume I centered title with glitch */
+.mag-intro-title {
+  font-family: var(--font-press-start), monospace;
+  font-size: clamp(28px, 5vw, 72px);
+  color: var(--nav-ink);
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  position: relative;
+  display: inline-block;
+  user-select: none;
+}
+
+/* Glitch layers — same text, clipped horizontal slices, offset in X */
+.mag-intro-title::before,
+.mag-intro-title::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  color: inherit;
+  background: var(--bg);
+  clip-path: polygon(0 0, 100% 0, 100% 0, 0 0); /* collapsed by default */
+}
+
+.mag-intro-title::before { animation: glitch-a 5s linear infinite; }
+.mag-intro-title::after  { animation: glitch-b 7s linear infinite 1.6s; }
+
+/* Glitch A — fires near end of 5s cycle (~85–88%) */
+@keyframes glitch-a {
+  0%, 84%   { clip-path: polygon(0 0,100% 0,100% 0,0 0); transform: none; }
+  85%       { clip-path: polygon(0 20%,100% 20%,100% 42%,0 42%); transform: translateX(-4px); }
+  86%       { clip-path: polygon(0 58%,100% 58%,100% 76%,0 76%); transform: translateX( 4px); }
+  87%       { clip-path: polygon(0 34%,100% 34%,100% 48%,0 48%); transform: translateX(-3px); }
+  88%, 100% { clip-path: polygon(0 0,100% 0,100% 0,0 0); transform: none; }
+}
+
+/* Glitch B — fires near 40% of 7s cycle (~40–42%) and again near 72% */
+@keyframes glitch-b {
+  0%, 39%   { clip-path: polygon(0 0,100% 0,100% 0,0 0); transform: none; }
+  40%       { clip-path: polygon(0 28%,100% 28%,100% 50%,0 50%); transform: translateX( 4px); }
+  41%       { clip-path: polygon(0 62%,100% 62%,100% 78%,0 78%); transform: translateX(-3px); }
+  42%, 71%  { clip-path: polygon(0 0,100% 0,100% 0,0 0); transform: none; }
+  72%       { clip-path: polygon(0 12%,100% 12%,100% 32%,0 32%); transform: translateX( 3px); }
+  73%, 100% { clip-path: polygon(0 0,100% 0,100% 0,0 0); transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mag-intro-title::before,
+  .mag-intro-title::after { animation: none; }
+}
+
+/* Main content fades in from below during exit phase */
+.mag-main--entering {
+  animation: mag-main-reveal 520ms cubic-bezier(0.22, 1, 0.36, 1) 160ms both;
+}
+
+@keyframes mag-main-reveal {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Green theme: intro title uses pink (matching article content) */
+[data-theme="4"] .mag-intro { --nav-ink: rgb(255, 54, 219); }
 
 /* ---------- Inner page content ---------- */
 .page-content {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useLayoutEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getArticlesByVolume, toRoman } from '@/lib/articles'
 import { navigateTo } from '@/lib/navigate'
@@ -33,7 +33,6 @@ function MagOverlay({ article, onClose }: { article: Article; onClose: () => voi
       <div className="mag-modal" onClick={e => e.stopPropagation()}>
         <button className="mag-close" onClick={onClose} aria-label="Close">✕</button>
 
-        {/* Left — portrait cover preview */}
         <div className="mag-modal-left">
           <span className="mag-modal-left-num">
             Vol.&nbsp;{toRoman(article.volume)}&nbsp;·&nbsp;{article.articleInVolume}
@@ -41,7 +40,6 @@ function MagOverlay({ article, onClose }: { article: Article; onClose: () => voi
           <h3 className="mag-modal-left-title">{article.title}</h3>
         </div>
 
-        {/* Right — article info */}
         <div className="mag-modal-right">
           <div className="mag-modal-eyebrow">
             Volume&nbsp;{toRoman(article.volume)}&nbsp;·&nbsp;Article&nbsp;{article.articleInVolume}
@@ -63,31 +61,71 @@ function MagOverlay({ article, onClose }: { article: Article; onClose: () => voi
   )
 }
 
+type Phase = 'intro' | 'exit' | 'revealed'
+
 export default function ArticlesContent() {
   const [selected, setSelected] = useState<Article | null>(null)
+  const [phase, setPhase] = useState<Phase>('intro')
   const volumes = Array.from(getArticlesByVolume().entries()).sort(([a], [b]) => a - b)
+
+  // Synchronously check session before first paint to avoid intro flash on revisit
+  useLayoutEffect(() => {
+    if (sessionStorage.getItem('articles-revealed') === '1') {
+      setPhase('revealed')
+    }
+  }, [])
+
+  // Drive nav visibility via html class
+  useEffect(() => {
+    if (phase === 'intro') {
+      document.documentElement.classList.add('articles-intro-active')
+    } else {
+      document.documentElement.classList.remove('articles-intro-active')
+    }
+    return () => document.documentElement.classList.remove('articles-intro-active')
+  }, [phase])
+
+  function handleReveal() {
+    if (phase !== 'intro') return
+    setPhase('exit')
+    sessionStorage.setItem('articles-revealed', '1')
+    setTimeout(() => setPhase('revealed'), 700)
+  }
 
   return (
     <>
-      <main className="mag-main">
-        {volumes.map(([vol, articles]) => (
-          <section key={vol} className="mag-volume">
-            <header className="mag-vol-header">
-              <h2 className="mag-vol-title">Volume&nbsp;{toRoman(vol)}</h2>
-              <div className="mag-vol-rule" aria-hidden />
-            </header>
-            <div className="mag-row">
-              {articles.map(article => (
-                <MagCard
-                  key={article.slug}
-                  article={article}
-                  onSelect={() => setSelected(article)}
-                />
-              ))}
-            </div>
-          </section>
-        ))}
-      </main>
+      {(phase === 'intro' || phase === 'exit') && (
+        <div
+          className={`mag-intro${phase === 'exit' ? ' mag-intro--exit' : ''}`}
+          onClick={handleReveal}
+        >
+          <h2 className="mag-intro-title" data-text="Volume I">
+            Volume&nbsp;I
+          </h2>
+        </div>
+      )}
+
+      {(phase === 'exit' || phase === 'revealed') && (
+        <main className={`mag-main${phase === 'exit' ? ' mag-main--entering' : ''}`}>
+          {volumes.map(([vol, articles]) => (
+            <section key={vol} className="mag-volume">
+              <header className="mag-vol-header">
+                <h2 className="mag-vol-title">Volume&nbsp;{toRoman(vol)}</h2>
+                <div className="mag-vol-rule" aria-hidden />
+              </header>
+              <div className="mag-row">
+                {articles.map(article => (
+                  <MagCard
+                    key={article.slug}
+                    article={article}
+                    onSelect={() => setSelected(article)}
+                  />
+                ))}
+              </div>
+            </section>
+          ))}
+        </main>
+      )}
 
       {selected && (
         <MagOverlay article={selected} onClose={() => setSelected(null)} />
