@@ -577,13 +577,13 @@ html.articles-intro-active .articles-page-nav {
   align-items: center;
   justify-content: center;
   background: var(--bg);
-  cursor: crosshair;
-  transition: opacity 520ms ease, transform 660ms cubic-bezier(0.22, 1, 0.36, 1);
+  cursor: default;
+  /* Fast fade — FLIP title takes over at the same position */
+  transition: opacity 60ms ease;
 }
 
 .mag-intro--exit {
   opacity: 0;
-  transform: translateY(-30vh);
   pointer-events: none;
 }
 
@@ -613,26 +613,36 @@ html.articles-intro-active .articles-page-nav {
   clip-path: polygon(0 0, 100% 0, 100% 0, 0 0); /* collapsed by default */
 }
 
-.mag-intro-title::before { animation: glitch-a 5s linear infinite; }
-.mag-intro-title::after  { animation: glitch-b 7s linear infinite 1.6s; }
+/* 2.4s cycle fires 3× during the 2s display window; 1.8s cycle (offset 0.5s) fires 2× */
+.mag-intro-title::before { animation: glitch-a 2.4s linear infinite; }
+.mag-intro-title::after  { animation: glitch-b 1.8s linear infinite 0.5s; }
 
-/* Glitch A — fires near end of 5s cycle (~85–88%) */
+/* Glitch A — bursts at ~20%, ~54%, ~85% of 2.4s = 0.48s, 1.3s, 2.04s */
 @keyframes glitch-a {
-  0%, 84%   { clip-path: polygon(0 0,100% 0,100% 0,0 0); transform: none; }
-  85%       { clip-path: polygon(0 20%,100% 20%,100% 42%,0 42%); transform: translateX(-4px); }
-  86%       { clip-path: polygon(0 58%,100% 58%,100% 76%,0 76%); transform: translateX( 4px); }
-  87%       { clip-path: polygon(0 34%,100% 34%,100% 48%,0 48%); transform: translateX(-3px); }
-  88%, 100% { clip-path: polygon(0 0,100% 0,100% 0,0 0); transform: none; }
+  0%, 19%, 22%, 53%, 57%, 84%, 88%, 100% {
+    clip-path: polygon(0 0,100% 0,100% 0,0 0); transform: none;
+  }
+  20%  { clip-path: polygon(0 18%,100% 18%,100% 40%,0 40%); transform: translateX(-6px); }
+  21%  { clip-path: polygon(0 56%,100% 56%,100% 76%,0 76%); transform: translateX( 5px); }
+  54%  { clip-path: polygon(0 32%,100% 32%,100% 52%,0 52%); transform: translateX( 7px); }
+  55%  { clip-path: polygon(0 68%,100% 68%,100% 86%,0 86%); transform: translateX(-5px); }
+  56%  { clip-path: polygon(0 10%,100% 10%,100% 24%,0 24%); transform: translateX( 4px); }
+  85%  { clip-path: polygon(0 42%,100% 42%,100% 60%,0 60%); transform: translateX(-7px); }
+  86%  { clip-path: polygon(0 74%,100% 74%,100% 90%,0 90%); transform: translateX( 6px); }
+  87%  { clip-path: polygon(0 22%,100% 22%,100% 38%,0 38%); transform: translateX(-4px); }
 }
 
-/* Glitch B — fires near 40% of 7s cycle (~40–42%) and again near 72% */
+/* Glitch B — bursts at ~30%, ~68% of 1.8s (+0.5s offset) = 1.04s, 1.72s */
 @keyframes glitch-b {
-  0%, 39%   { clip-path: polygon(0 0,100% 0,100% 0,0 0); transform: none; }
-  40%       { clip-path: polygon(0 28%,100% 28%,100% 50%,0 50%); transform: translateX( 4px); }
-  41%       { clip-path: polygon(0 62%,100% 62%,100% 78%,0 78%); transform: translateX(-3px); }
-  42%, 71%  { clip-path: polygon(0 0,100% 0,100% 0,0 0); transform: none; }
-  72%       { clip-path: polygon(0 12%,100% 12%,100% 32%,0 32%); transform: translateX( 3px); }
-  73%, 100% { clip-path: polygon(0 0,100% 0,100% 0,0 0); transform: none; }
+  0%, 29%, 33%, 67%, 72%, 100% {
+    clip-path: polygon(0 0,100% 0,100% 0,0 0); transform: none;
+  }
+  30%  { clip-path: polygon(0 44%,100% 44%,100% 64%,0 64%); transform: translateX( 6px); }
+  31%  { clip-path: polygon(0 12%,100% 12%,100% 30%,0 30%); transform: translateX(-5px); }
+  32%  { clip-path: polygon(0 60%,100% 60%,100% 78%,0 78%); transform: translateX( 7px); }
+  68%  { clip-path: polygon(0 26%,100% 26%,100% 46%,0 46%); transform: translateX(-7px); }
+  69%  { clip-path: polygon(0 58%,100% 58%,100% 74%,0 74%); transform: translateX( 5px); }
+  70%  { clip-path: polygon(0 6%,100%  6%,100% 20%,0 20%); transform: translateX(-4px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -640,13 +650,17 @@ html.articles-intro-active .articles-page-nav {
   .mag-intro-title::after { animation: none; }
 }
 
-/* Main content fades in from below during exit phase */
-.mag-main--entering {
-  animation: mag-main-reveal 520ms cubic-bezier(0.22, 1, 0.36, 1) 160ms both;
+/* During exit phase: rule and cards fade in; Volume I title is animated by JS FLIP */
+.mag-main--entering .mag-vol-rule {
+  animation: mag-fade-in 480ms ease 380ms both;
 }
 
-@keyframes mag-main-reveal {
-  from { opacity: 0; transform: translateY(12px); }
+.mag-main--entering .mag-row {
+  animation: mag-fade-in 560ms ease 300ms both;
+}
+
+@keyframes mag-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: none; }
 }
 
