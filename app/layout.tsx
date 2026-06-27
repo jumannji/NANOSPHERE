@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from 'next'
 import { Cinzel, Italiana, Press_Start_2P } from 'next/font/google'
 import './globals.css'
 import DynamicFavicon from '@/components/DynamicFavicon'
-import SiteFooter from '@/components/SiteFooter'
 
 const cinzel = Cinzel({
   subsets: ['latin'],
@@ -45,7 +44,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         {children}
-        <SiteFooter />
         <DynamicFavicon />
       </body>
     </html>
