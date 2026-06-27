@@ -55,20 +55,6 @@ function MagOverlay({ article, onClose }: { article: Article; onClose: () => voi
           >
             Read
           </button>
-
-          <div className="mag-modal-socials">
-            {(['TIKTOK', 'INSTAGRAM', 'TWITTER', 'SUBSTACK'] as const).map(label => (
-              <a
-                key={label}
-                href="#"
-                className="mag-modal-social-link"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {label}
-              </a>
-            ))}
-          </div>
         </div>
       </div>
     </div>
