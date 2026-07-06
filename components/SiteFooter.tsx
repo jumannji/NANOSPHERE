@@ -1,6 +1,6 @@
 const LINKS = [
   { label: 'TIKTOK',    href: '#' },
-  { label: 'INSTAGRAM', href: '#' },
+  { label: 'INSTAGRAM', href: 'https://www.instagram.com/xnanosphere/' },
   { label: 'TWITTER',   href: '#' },
   { label: 'SUBSTACK',  href: '#' },
 ]
