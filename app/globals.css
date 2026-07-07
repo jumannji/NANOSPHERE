@@ -747,7 +747,7 @@ html.articles-intro-active .articles-page-nav {
   /* Sphere nav: column-gap 12px and tighter group spacing
      At 390px: 1fr = (370-44-24)/2 = 151px
      Left group: Articles(~46px) + gap(10) + NanoBazaar pill(~60px) = ~116px < 151px ✓
-     Right group: NanoWeb(~40px) + gap(10) + About(~31px) = ~81px < 151px ✓ */
+     Right group: Archives(~52px) + gap(10) + About(~31px) = ~93px < 151px ✓ */
   .nav-links--sphere { column-gap: 12px; }
   .nav-group-left, .nav-group-right { gap: 10px; }
 

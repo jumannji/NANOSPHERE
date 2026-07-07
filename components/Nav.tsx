@@ -29,7 +29,7 @@ export default function Nav({ showSphere = false }: NavProps) {
           <TransitionLink href="/nanobazaar" className="pill">
             <span className="pill-label">NanoBazaar</span>
           </TransitionLink>
-          <TransitionLink href="/nanoweb">NanoWeb</TransitionLink>
+          <TransitionLink href="/archives">Archives</TransitionLink>
           <TransitionLink href="/about">About</TransitionLink>
         </div>
       </nav>
@@ -76,7 +76,7 @@ export default function Nav({ showSphere = false }: NavProps) {
         <NavSphere onClick={handleSphereClick} />
 
         <div className="nav-group-right">
-          <TransitionLink href="/nanoweb" style={rightLink(20)}>NanoWeb</TransitionLink>
+          <TransitionLink href="/archives" style={rightLink(20)}>Archives</TransitionLink>
           <TransitionLink href="/about"   style={rightLink(80)}>About</TransitionLink>
         </div>
       </div>

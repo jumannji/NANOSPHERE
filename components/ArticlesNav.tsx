@@ -11,7 +11,7 @@ const EASE = 'cubic-bezier(0.22,1,0.36,1)'
 // Desktop: links slide from behind the sphere (right→left), rightmost first
 const DESKTOP_LINKS = [
   { href: '/nanobazaar', label: 'NanoBazaar', isPill: true  },
-  { href: '/nanoweb',    label: 'NanoWeb',    isPill: false },
+  { href: '/archives',   label: 'Archives',   isPill: false },
   { href: '/about',      label: 'About',      isPill: false },
 ]
 
@@ -88,7 +88,7 @@ export default function ArticlesNav() {
         </div>
         <NavSphere onClick={handleSphereClick} />
         <div className="nav-group-right">
-          <TransitionLink href="/nanoweb" style={rightStyle(20)}>NanoWeb</TransitionLink>
+          <TransitionLink href="/archives" style={rightStyle(20)}>Archives</TransitionLink>
           <TransitionLink href="/about"   style={rightStyle(80)}>About</TransitionLink>
         </div>
       </div>
