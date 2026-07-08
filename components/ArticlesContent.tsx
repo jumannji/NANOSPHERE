@@ -2,23 +2,29 @@
 
 import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { getArticlesByVolume, toRoman, isLocked } from '@/lib/articles'
+import { getArticlesByVolume, toRoman, isLocked, formatDate, getWordCount } from '@/lib/articles'
 import { navigateTo } from '@/lib/navigate'
+import { urlFor } from '@/lib/sanity/image'
 import WireframeSphere from '@/components/WireframeSphere'
 import type { Article } from '@/lib/articles'
 
 function MagCard({ article, locked, onSelect }: { article: Article; locked: boolean; onSelect: () => void }) {
+  const coverUrl = !locked && article.coverImage ? urlFor(article.coverImage).width(480).height(720).url() : null
   return (
-    <button className="mag-card" onClick={onSelect} aria-label={locked ? `${article.title} — locked until ${article.date}` : `Open ${article.title}`}>
+    <button className="mag-card" onClick={onSelect} aria-label={locked ? `${article.title} — locked until ${formatDate(article.publishDate)}` : `Open ${article.title}`}>
       {locked ? (
         <div className="mag-cover mag-cover--locked">
           <WireframeSphere size={64} colorVar="--bg" className="mag-cover-sphere" />
-          <span className="mag-cover-date">{article.date}</span>
+          <span className="mag-cover-date">{formatDate(article.publishDate)}</span>
         </div>
       ) : (
-        <div className="mag-cover">
+        <div
+          className="mag-cover"
+          data-has-image={coverUrl ? 'true' : undefined}
+          style={coverUrl ? { backgroundImage: `url(${coverUrl})` } : undefined}
+        >
           <span className="mag-cover-num">
-            Vol.&nbsp;{toRoman(article.volume)}&nbsp;·&nbsp;{article.articleInVolume}
+            Vol.&nbsp;{toRoman(article.volume)}&nbsp;·&nbsp;{article.articleNumber}
           </span>
           <h3 className="mag-cover-title">{article.title}</h3>
         </div>
@@ -29,6 +35,7 @@ function MagCard({ article, locked, onSelect }: { article: Article; locked: bool
 
 function MagOverlay({ article, locked, onClose }: { article: Article; locked: boolean; onClose: () => void }) {
   const router = useRouter()
+  const coverUrl = !locked && article.coverImage ? urlFor(article.coverImage).width(480).height(720).url() : null
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -46,9 +53,13 @@ function MagOverlay({ article, locked, onClose }: { article: Article; locked: bo
             <WireframeSphere size={160} colorVar="--bg" className="mag-modal-sphere" />
           </div>
         ) : (
-          <div className="mag-modal-left">
+          <div
+            className="mag-modal-left"
+            data-has-image={coverUrl ? 'true' : undefined}
+            style={coverUrl ? { backgroundImage: `url(${coverUrl})` } : undefined}
+          >
             <span className="mag-modal-left-num">
-              Vol.&nbsp;{toRoman(article.volume)}&nbsp;·&nbsp;{article.articleInVolume}
+              Vol.&nbsp;{toRoman(article.volume)}&nbsp;·&nbsp;{article.articleNumber}
             </span>
             <h3 className="mag-modal-left-title">{article.title}</h3>
           </div>
@@ -56,12 +67,12 @@ function MagOverlay({ article, locked, onClose }: { article: Article; locked: bo
 
         <div className="mag-modal-right">
           <div className="mag-modal-eyebrow">
-            Volume&nbsp;{toRoman(article.volume)}&nbsp;·&nbsp;Article&nbsp;{article.articleInVolume}
+            Volume&nbsp;{toRoman(article.volume)}&nbsp;·&nbsp;Article&nbsp;{article.articleNumber}
           </div>
           <h2 className="mag-modal-title">{article.title}</h2>
           <div className="mag-modal-meta">
-            <span className="mag-meta-row">{article.date}</span>
-            {!locked && <span className="mag-meta-row">{article.wordCount.toLocaleString()} words</span>}
+            <span className="mag-meta-row">{formatDate(article.publishDate)}</span>
+            {!locked && <span className="mag-meta-row">{getWordCount(article.plainText).toLocaleString()} words</span>}
           </div>
           {locked ? (
             <button className="mag-read-btn mag-read-btn--disabled" disabled>
@@ -83,10 +94,10 @@ function MagOverlay({ article, locked, onClose }: { article: Article; locked: bo
 
 type Phase = 'intro' | 'exit' | 'revealed'
 
-export default function ArticlesContent() {
+export default function ArticlesContent({ articles }: { articles: Article[] }) {
   const [selected, setSelected] = useState<Article | null>(null)
   const [phase, setPhase] = useState<Phase>('intro')
-  const volumes = Array.from(getArticlesByVolume().entries()).sort(([a], [b]) => a - b)
+  const volumes = Array.from(getArticlesByVolume(articles).entries()).sort(([a], [b]) => a - b)
 
   const introTitleRef = useRef<HTMLHeadingElement>(null)
   const mainTitleRef  = useRef<HTMLHeadingElement>(null)

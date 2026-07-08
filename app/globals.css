@@ -409,6 +409,28 @@ html.articles-intro-active .articles-page-nav {
   opacity: 0.88;
 }
 
+/* ── Cover with editor-supplied image — scrim keeps overlaid text legible ── */
+.mag-cover[data-has-image='true'],
+.mag-modal-left[data-has-image='true'] {
+  background-size: cover;
+  background-position: center;
+}
+.mag-cover[data-has-image='true']::after,
+.mag-modal-left[data-has-image='true']::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0) 45%, rgba(0,0,0,0.78) 100%);
+  pointer-events: none;
+}
+.mag-cover[data-has-image='true'] .mag-cover-num,
+.mag-cover[data-has-image='true'] .mag-cover-title,
+.mag-modal-left[data-has-image='true'] .mag-modal-left-num,
+.mag-modal-left[data-has-image='true'] .mag-modal-left-title {
+  position: relative;
+  z-index: 1;
+}
+
 /* ── Locked cover — rotating wireframe sphere + publish date ── */
 .mag-cover--locked {
   align-items: center;
@@ -724,6 +746,102 @@ html.articles-intro-active .articles-page-nav {
   color: rgba(15,15,16,0.52);
   text-transform: uppercase;
   max-width: 560px;
+}
+
+/* ---------- Individual article page ---------- */
+
+.article-meta {
+  font-family: var(--font-cinzel), serif;
+  font-size: 9px;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  color: rgba(15,15,16,0.45);
+  font-weight: 400;
+  margin-bottom: 18px;
+}
+
+.article-subtitle {
+  font-family: var(--font-italiana), serif;
+  font-weight: 400;
+  font-size: clamp(18px, 2.4vw, 28px);
+  color: var(--ink);
+  opacity: 0.72;
+  line-height: 1.35;
+  max-width: 640px;
+  margin-bottom: 36px;
+}
+
+.article-cover {
+  display: block;
+  width: 100%;
+  max-width: 720px;
+  height: auto;
+  margin-bottom: 40px;
+  border: 0.5px solid rgba(15,15,16,0.14);
+}
+
+.article-body {
+  font-family: var(--font-cinzel), serif;
+  font-size: 13px;
+  letter-spacing: 0.03em;
+  line-height: 2;
+  color: rgba(15,15,16,0.68);
+  max-width: 620px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.article-body-h2 {
+  font-family: var(--font-italiana), serif;
+  font-weight: 400;
+  font-size: clamp(22px, 3vw, 34px);
+  color: var(--ink);
+  opacity: 0.88;
+  letter-spacing: 0.02em;
+  margin-top: 10px;
+}
+
+.article-body-h3 {
+  font-family: var(--font-italiana), serif;
+  font-weight: 400;
+  font-size: clamp(18px, 2.4vw, 24px);
+  color: var(--ink);
+  opacity: 0.85;
+  letter-spacing: 0.02em;
+}
+
+.article-body-quote {
+  border-left: 2px solid rgba(15,15,16,0.2);
+  padding-left: 20px;
+  font-style: italic;
+  opacity: 0.85;
+}
+
+.article-body a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ── Locked article page — same sphere placeholder as the archive cards ── */
+.article-locked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  padding: 60px 0;
+}
+
+.article-locked-label {
+  font-family: var(--font-cinzel), serif;
+  font-size: 9px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--ink);
+  opacity: 0.42;
+  font-weight: 400;
 }
 
 /* (articles layout lives in .mag-* above) */
