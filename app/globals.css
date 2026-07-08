@@ -409,6 +409,24 @@ html.articles-intro-active .articles-page-nav {
   opacity: 0.88;
 }
 
+/* ── Locked cover — rotating wireframe sphere + publish date ── */
+.mag-cover--locked {
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+.mag-cover-sphere { opacity: 0.9; }
+.mag-cover-date {
+  font-family: var(--font-cinzel), serif;
+  font-size: 7.5px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--bg);
+  opacity: 0.42;
+  font-weight: 400;
+  text-align: center;
+}
+
 /* ── Article overlay — cover left, info right ── */
 
 .mag-overlay {
@@ -481,6 +499,12 @@ html.articles-intro-active .articles-page-nav {
   border: 0.5px solid rgba(127,127,127,0.07);
   pointer-events: none;
 }
+
+.mag-modal-left--locked {
+  align-items: center;
+  justify-content: center;
+}
+.mag-modal-sphere { opacity: 0.9; }
 
 .mag-modal-left-num {
   font-family: var(--font-cinzel), serif;
@@ -566,6 +590,12 @@ html.articles-intro-active .articles-page-nav {
   transition: opacity 200ms ease;
 }
 .mag-read-btn:hover { opacity: 0.76; }
+
+.mag-read-btn--disabled {
+  cursor: not-allowed;
+  opacity: 0.38;
+}
+.mag-read-btn--disabled:hover { opacity: 0.38; }
 
 /* ── Articles intro entry experience ─────────────────────────────────────── */
 

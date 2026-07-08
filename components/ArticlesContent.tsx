@@ -2,24 +2,32 @@
 
 import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { getArticlesByVolume, toRoman } from '@/lib/articles'
+import { getArticlesByVolume, toRoman, isLocked } from '@/lib/articles'
 import { navigateTo } from '@/lib/navigate'
+import WireframeSphere from '@/components/WireframeSphere'
 import type { Article } from '@/lib/articles'
 
-function MagCard({ article, onSelect }: { article: Article; onSelect: () => void }) {
+function MagCard({ article, locked, onSelect }: { article: Article; locked: boolean; onSelect: () => void }) {
   return (
-    <button className="mag-card" onClick={onSelect} aria-label={`Open ${article.title}`}>
-      <div className="mag-cover">
-        <span className="mag-cover-num">
-          Vol.&nbsp;{toRoman(article.volume)}&nbsp;·&nbsp;{article.articleInVolume}
-        </span>
-        <h3 className="mag-cover-title">{article.title}</h3>
-      </div>
+    <button className="mag-card" onClick={onSelect} aria-label={locked ? `${article.title} — locked until ${article.date}` : `Open ${article.title}`}>
+      {locked ? (
+        <div className="mag-cover mag-cover--locked">
+          <WireframeSphere size={64} colorVar="--bg" className="mag-cover-sphere" />
+          <span className="mag-cover-date">{article.date}</span>
+        </div>
+      ) : (
+        <div className="mag-cover">
+          <span className="mag-cover-num">
+            Vol.&nbsp;{toRoman(article.volume)}&nbsp;·&nbsp;{article.articleInVolume}
+          </span>
+          <h3 className="mag-cover-title">{article.title}</h3>
+        </div>
+      )}
     </button>
   )
 }
 
-function MagOverlay({ article, onClose }: { article: Article; onClose: () => void }) {
+function MagOverlay({ article, locked, onClose }: { article: Article; locked: boolean; onClose: () => void }) {
   const router = useRouter()
 
   useEffect(() => {
@@ -33,12 +41,18 @@ function MagOverlay({ article, onClose }: { article: Article; onClose: () => voi
       <div className="mag-modal" onClick={e => e.stopPropagation()}>
         <button className="mag-close" onClick={onClose} aria-label="Close">✕</button>
 
-        <div className="mag-modal-left">
-          <span className="mag-modal-left-num">
-            Vol.&nbsp;{toRoman(article.volume)}&nbsp;·&nbsp;{article.articleInVolume}
-          </span>
-          <h3 className="mag-modal-left-title">{article.title}</h3>
-        </div>
+        {locked ? (
+          <div className="mag-modal-left mag-modal-left--locked">
+            <WireframeSphere size={160} colorVar="--bg" className="mag-modal-sphere" />
+          </div>
+        ) : (
+          <div className="mag-modal-left">
+            <span className="mag-modal-left-num">
+              Vol.&nbsp;{toRoman(article.volume)}&nbsp;·&nbsp;{article.articleInVolume}
+            </span>
+            <h3 className="mag-modal-left-title">{article.title}</h3>
+          </div>
+        )}
 
         <div className="mag-modal-right">
           <div className="mag-modal-eyebrow">
@@ -47,14 +61,20 @@ function MagOverlay({ article, onClose }: { article: Article; onClose: () => voi
           <h2 className="mag-modal-title">{article.title}</h2>
           <div className="mag-modal-meta">
             <span className="mag-meta-row">{article.date}</span>
-            <span className="mag-meta-row">{article.wordCount.toLocaleString()} words</span>
+            {!locked && <span className="mag-meta-row">{article.wordCount.toLocaleString()} words</span>}
           </div>
-          <button
-            className="mag-read-btn"
-            onClick={() => navigateTo(`/articles/${article.slug}`, h => router.push(h))}
-          >
-            Read
-          </button>
+          {locked ? (
+            <button className="mag-read-btn mag-read-btn--disabled" disabled>
+              Coming Soon
+            </button>
+          ) : (
+            <button
+              className="mag-read-btn"
+              onClick={() => navigateTo(`/articles/${article.slug}`, h => router.push(h))}
+            >
+              Read
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -174,6 +194,7 @@ export default function ArticlesContent() {
                   <MagCard
                     key={article.slug}
                     article={article}
+                    locked={isLocked(article)}
                     onSelect={() => setSelected(article)}
                   />
                 ))}
@@ -184,7 +205,7 @@ export default function ArticlesContent() {
       )}
 
       {selected && (
-        <MagOverlay article={selected} onClose={() => setSelected(null)} />
+        <MagOverlay article={selected} locked={isLocked(selected)} onClose={() => setSelected(null)} />
       )}
     </>
   )
