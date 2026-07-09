@@ -8,5 +8,7 @@ export const client = createClient({
   projectId,
   dataset,
   apiVersion,
-  useCdn: true,
+  // Freshness over speed: article pages must reflect Studio edits on the
+  // very next load, so skip Sanity's CDN edge cache (which can lag ~60s).
+  useCdn: false,
 })

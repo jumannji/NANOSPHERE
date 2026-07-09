@@ -10,15 +10,22 @@ import { toRoman, isLocked, formatDate, getWordCount, type Article } from '@/lib
 
 interface Props { params: { slug: string } }
 
-export const revalidate = 60
+// Always render fresh — this page must reflect Sanity Studio edits on
+// the very next load, not a cached build-time or ISR snapshot.
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export async function generateStaticParams() {
-  const slugs = await client.withConfig({ useCdn: false }).fetch<string[]>(ARTICLE_SLUGS_QUERY)
+  const slugs = await client.fetch<string[]>(ARTICLE_SLUGS_QUERY, {}, { cache: 'no-store' })
   return slugs.map(slug => ({ slug }))
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const article = await client.fetch<Article | null>(ARTICLE_QUERY, { slug: params.slug })
+  const article = await client.fetch<Article | null>(
+    ARTICLE_QUERY,
+    { slug: params.slug },
+    { cache: 'no-store' },
+  )
   if (!article) return {}
   return { title: `${article.title} — NanoSphere` }
 }
@@ -40,7 +47,11 @@ const portableTextComponents: PortableTextComponents = {
 }
 
 export default async function ArticlePage({ params }: Props) {
-  const article = await client.fetch<Article | null>(ARTICLE_QUERY, { slug: params.slug })
+  const article = await client.fetch<Article | null>(
+    ARTICLE_QUERY,
+    { slug: params.slug },
+    { cache: 'no-store' },
+  )
   if (!article) notFound()
 
   const locked = isLocked(article)
