@@ -12,18 +12,12 @@
   --sphere-rgb: 18,18,20;
   --pill-red: #b33a3a;
   --pill-blue: #2f5bb0;
-  /* Homepage hero wordmark + its wireframe sphere — white reads on
-     yellow/red/green; only the pale mint theme needs a dark variant. */
-  --hero-ink: #fafafa;
-  --hero-sphere-rgb: 250,250,250;
 }
 [data-theme="2"] {
   --bg: #c8fffb;
   --nav-ink: #080100;
   --logo-ink: #080100;
   --sphere-rgb: 8,1,0;
-  --hero-ink: #080100;
-  --hero-sphere-rgb: 8,1,0;
 }
 [data-theme="3"] {
   --bg: rgb(255, 0, 0);
@@ -92,9 +86,6 @@ nav {
   align-items: center;
   gap: 22px;
   border-bottom: 0.5px solid rgba(15,15,16,0.16);
-  /* Solid theme color — masks the homepage wallpaper/blobs behind it so
-     the header never picks up the hero redesign's background texture. */
-  background: var(--bg);
 }
 
 .nav-links {
@@ -244,136 +235,6 @@ nav {
   color: rgba(15,15,16,0.42);
   z-index: 5;
   white-space: nowrap;
-}
-
-/* ── Homepage hero ────────────────────────────────────────────────────────── */
-
-.hero {
-  position: relative;
-  width: 100%;
-  height: 100dvh;
-  overflow: hidden;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-/* "KINDNESS IS RESISTANCE" tiled wallpaper — one long wrapped string so
-   each row staggers phase naturally, like a ticker tape, rather than
-   lining up in a rigid grid. */
-.hero-wallpaper {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  overflow: hidden;
-  font-family: var(--font-press-start), monospace;
-  font-size: clamp(9px, 1.15vw, 15px);
-  line-height: 2.3;
-  letter-spacing: 0.02em;
-  color: rgba(10,8,6,0.55);
-  user-select: none;
-  pointer-events: none;
-}
-
-/* Two soft dark blobs, slowly pushing apart and pulling back together. */
-.hero-blob {
-  position: absolute;
-  top: 50%;
-  width: 46vmin;
-  height: 46vmin;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(8,6,5,0.65) 0%, rgba(8,6,5,0.35) 45%, rgba(8,6,5,0) 72%);
-  filter: blur(28px);
-  mix-blend-mode: multiply;
-  z-index: 0;
-  pointer-events: none;
-  will-change: transform;
-}
-.hero-blob-a { left: 50%; animation: hero-blob-breathe-a 7s ease-in-out infinite; }
-.hero-blob-b { left: 50%; animation: hero-blob-breathe-b 7.6s ease-in-out infinite; }
-
-@keyframes hero-blob-breathe-a {
-  0%, 100% { transform: translate(-78%, -50%) scale(1); }
-  50%      { transform: translate(-88%, -50%) scale(1.06); }
-}
-@keyframes hero-blob-breathe-b {
-  0%, 100% { transform: translate(-22%, -50%) scale(1); }
-  50%      { transform: translate(-12%, -50%) scale(1.06); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .hero-blob-a, .hero-blob-b { animation: none; }
-}
-
-/* Stacked color bars pinned to the left/right edges. */
-.hero-bars {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  flex-direction: column;
-  gap: clamp(4px, 0.6vw, 8px);
-  z-index: 2;
-  pointer-events: none;
-}
-.hero-bars-left  { left: 0; }
-.hero-bars-right { right: 0; }
-.hero-bar {
-  width: clamp(48px, 8vw, 96px);
-  height: clamp(10px, 1.6vw, 18px);
-}
-.hero-bar-1 { background: #ee2b1f; }
-.hero-bar-2 { background: #ff34c8; }
-.hero-bar-3 { background: #20d0ee; }
-.hero-bar-4 { background: #1f9e3e; }
-.hero-bar-5 { background: #ffcf1f; }
-
-/* Wordmark — "Nan" + rotating wireframe sphere standing in for the "o" + "sphere". */
-.hero-wordmark-wrap {
-  position: relative;
-  z-index: 3;
-}
-.hero-wordmark {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: clamp(2px, 0.6vw, 10px);
-  will-change: transform;
-  transform-origin: center center;
-  cursor: default;
-  user-select: none;
-}
-.hero-word {
-  position: relative;
-  display: inline-block;
-  font-family: var(--font-press-start), monospace;
-  font-weight: 400;
-  font-size: clamp(20px, 8vw, 100px);
-  line-height: 1;
-  color: var(--hero-ink);
-  white-space: nowrap;
-}
-.hero-glitch {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-.hero-sphere-wrap {
-  position: relative;
-  flex-shrink: 0;
-  filter: drop-shadow(0 0 14px rgba(0,0,0,0.25));
-}
-.hero-sphere { display: block; }
-/* Specular glint, like light catching a polished globe. */
-.hero-sphere-wrap::before {
-  content: '';
-  position: absolute;
-  top: 18%;
-  left: 22%;
-  width: 22%;
-  height: 22%;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 70%);
-  pointer-events: none;
 }
 
 /* ── Articles page nav ───────────────────────────────────────────────────── */
