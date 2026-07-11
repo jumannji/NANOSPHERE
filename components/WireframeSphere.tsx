@@ -49,9 +49,13 @@ interface Props {
    *  sphere over a dark panel so it stays legible (matches the existing
    *  cover-text pattern of using --bg as the accent color on dark ink). */
   colorVar?: string
+  /** Thicker lines + higher opacity — for standalone branding use (e.g.
+   *  the homepage wordmark) where the sphere must read clearly on its
+   *  own, rather than as a subtle decorative accent. */
+  bold?: boolean
 }
 
-export default function WireframeSphere({ size, className, colorVar = '--sphere-rgb' }: Props) {
+export default function WireframeSphere({ size, className, colorVar = '--sphere-rgb', bold = false }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -80,24 +84,26 @@ export default function WireframeSphere({ size, className, colorVar = '--sphere-
         return { x: cx + x*R, y: cy + y*R, z }
       }
 
-      ctx.lineWidth = 0.5
+      ctx.lineWidth = bold ? 1.1 : 0.5
       for (const c of SPHERE_CIRCLES) {
         const proj_ = c.pts.map(proj)
         for (let i = 0; i < proj_.length; i++) {
           const a = proj_[i], b = proj_[(i + 1) % proj_.length]
-          const op = 0.03 + ((a.z + b.z) * 0.5 + 1) * 0.5 * 0.22
+          const op = bold
+            ? 0.14 + ((a.z + b.z) * 0.5 + 1) * 0.5 * 0.55
+            : 0.03 + ((a.z + b.z) * 0.5 + 1) * 0.5 * 0.22
           ctx.strokeStyle = `rgba(${sphereRgb},${op.toFixed(3)})`
           ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke()
         }
       }
-      ctx.strokeStyle = `rgba(${sphereRgb},0.32)`
+      ctx.strokeStyle = `rgba(${sphereRgb},${bold ? 0.9 : 0.32})`
       ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke()
 
       rafId = requestAnimationFrame(frame)
     }
     rafId = requestAnimationFrame(frame)
     return () => cancelAnimationFrame(rafId)
-  }, [size, colorVar])
+  }, [size, colorVar, bold])
 
   return (
     <canvas
