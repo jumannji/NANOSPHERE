@@ -1,8 +1,8 @@
 const LINKS = [
   { label: 'TIKTOK',    href: '#' },
-  { label: 'INSTAGRAM', href: 'https://www.instagram.com/xnanosphere/' },
-  { label: 'TWITTER',   href: '#' },
-  { label: 'SUBSTACK',  href: '#' },
+  { label: 'INSTAGRAM', href: 'https://www.instagram.com/nanosphereee/' },
+  { label: 'TWITTER',   href: 'https://x.com/xNanoSphere' },
+  { label: 'SUBSTACK',  href: 'https://nanospherex.substack.com/' },
 ]
 
 export default function SiteFooter() {
