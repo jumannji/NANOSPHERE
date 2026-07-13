@@ -771,14 +771,15 @@ html.articles-intro-active .articles-page-nav {
   padding: 140px 60px 64px;
 }
 
-/* Desktop/tablet: metadata left, cover image right, top-aligned.
+/* Desktop/tablet: metadata left, cover image right, vertically centered
+   against each other rather than pinned to the top.
    Mobile: single column (image is hidden here — it reappears at the
    top of the white reading zone instead, see .article-cover-mobile). */
 .article-top-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 40px;
-  align-items: start;
+  align-items: center;
 }
 @media (min-width: 769px) {
   .article-top-grid {
@@ -802,7 +803,8 @@ html.articles-intro-active .articles-page-nav {
 
 .article-eyebrow {
   font-family: var(--font-cinzel), serif;
-  font-size: 9px;
+  font-weight: 600;
+  font-size: 12px;
   letter-spacing: 0.24em;
   text-transform: uppercase;
   color: rgba(15,15,16,0.42);
@@ -814,22 +816,14 @@ html.articles-intro-active .articles-page-nav {
   align-items: center;
   gap: 10px;
   font-family: var(--font-cinzel), serif;
-  font-size: 10px;
+  font-weight: 600;
+  font-size: 13px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: rgba(15,15,16,0.55);
   margin-bottom: 28px;
 }
 .article-meta-row span[aria-hidden] { opacity: 0.5; }
-
-.article-subtitle {
-  font-family: var(--font-italiana), serif;
-  font-weight: 400;
-  font-size: clamp(18px, 2.4vw, 28px);
-  color: var(--ink);
-  opacity: 0.72;
-  line-height: 1.35;
-}
 
 .article-cover {
   display: block;
@@ -860,6 +854,18 @@ html.articles-intro-active .articles-page-nav {
   max-width: 680px;
   margin: 0 auto;
   padding: 56px 24px 140px;
+}
+
+/* Standfirst — sits above the body in the white reading zone, same
+   font as the body text, set in italic to read as a lede. */
+.article-subtitle {
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-style: italic;
+  font-size: clamp(19px, 1vw + 16px, 23px);
+  line-height: 1.6;
+  color: #000;
+  opacity: 0.75;
+  margin-bottom: 44px;
 }
 
 .article-body {

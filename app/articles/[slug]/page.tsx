@@ -95,7 +95,6 @@ export default async function ArticlePage({ params }: Props) {
                   <span aria-hidden="true">·</span>
                   <span>{readingMinutes}&nbsp;min&nbsp;read</span>
                 </div>
-                {article.subtitle && <p className="article-subtitle">{article.subtitle}</p>}
               </div>
 
               {coverUrl && (
@@ -117,6 +116,8 @@ export default async function ArticlePage({ params }: Props) {
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={coverUrl} alt="" className="article-cover article-cover-mobile" />
               )}
+
+              {article.subtitle && <p className="article-subtitle">{article.subtitle}</p>}
 
               {Array.isArray(article.body) && article.body.length > 0 && (
                 <div className="article-body">
