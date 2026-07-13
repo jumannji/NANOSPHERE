@@ -1061,6 +1061,10 @@ html.articles-intro-active .articles-page-nav {
   .mag-row { grid-template-columns: repeat(2, 1fr); gap: 14px; padding: 0; }
   .mag-modal { grid-template-columns: 1fr; max-width: 420px; }
   .mag-modal-left { min-height: 200px; border-right: none; border-bottom: 0.5px solid rgba(127,127,127,0.10); }
+  /* Left/right panels stack here, so a cover image would otherwise show
+     the title twice — once overlaid on the image, once as the heading
+     below it. Keep only the one below (.mag-modal-title). */
+  .mag-modal-left[data-has-image='true'] .mag-modal-left-title { display: none; }
   .mag-modal-right { padding: 36px 32px; gap: 16px; }
   .mag-modal-title { font-size: 13px; }
 }
@@ -1104,10 +1108,22 @@ html.articles-intro-active .articles-page-nav {
     letter-spacing: 0.14em;
   }
 
-  .mag-main { padding: 70px 16px 48px; gap: 40px; }
-  /* One cover per row — scroll to the next, rather than a cramped 2-up grid */
-  .mag-row { grid-template-columns: 1fr; gap: 24px; padding: 0; }
-  .mag-cover-title { font-size: 14px; }
+  .mag-main { padding: 56px 14px 16px; gap: 16px; }
+  .mag-volume { gap: 8px; }
+  .mag-vol-header { padding-bottom: 6px; gap: 10px; }
+  .mag-vol-title { font-size: 15px; }
+  .mag-vol-rule { margin-bottom: 1px; }
+
+  /* Compact stack — all 4 covers fit on one screen, no scrolling.
+     Thin full-width bars instead of the tall 2/3 desktop card shape. */
+  .mag-row { grid-template-columns: 1fr; gap: 12px; padding: 0; }
+  .mag-card { aspect-ratio: auto; height: 118px; }
+  .mag-cover { padding: 10px 14px; }
+  .mag-cover-num { font-size: 6px; }
+  .mag-cover-title { font-size: 14px; line-height: 1.15; }
+  .mag-cover--locked { gap: 8px; }
+  .mag-cover-date { font-size: 7px; }
+
   .mag-modal-right { padding: 28px 24px; gap: 14px; }
   .mag-modal-title { font-size: 13px; }
   .mag-read-btn { padding: 12px 32px; }

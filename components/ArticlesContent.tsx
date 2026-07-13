@@ -8,13 +8,17 @@ import { urlFor } from '@/lib/sanity/image'
 import WireframeSphere from '@/components/WireframeSphere'
 import type { Article } from '@/lib/articles'
 
-function MagCard({ article, locked, onSelect }: { article: Article; locked: boolean; onSelect: () => void }) {
-  const coverUrl = !locked && article.coverImage ? urlFor(article.coverImage).width(480).height(720).url() : null
+function MagCard({ article, locked, compact, onSelect }: { article: Article; locked: boolean; compact: boolean; onSelect: () => void }) {
+  // On compact mobile cards, never show the cover image — collapsed
+  // cards are title-only (unlocked) or sphere-only (locked) there.
+  const coverUrl = !locked && !compact && article.coverImage
+    ? urlFor(article.coverImage).width(480).height(720).url()
+    : null
   return (
     <button className="mag-card" onClick={onSelect} aria-label={locked ? `${article.title} — locked until ${formatDate(article.publishDate)}` : `Open ${article.title}`}>
       {locked ? (
         <div className="mag-cover mag-cover--locked">
-          <WireframeSphere size={64} colorVar="--bg" className="mag-cover-sphere" />
+          <WireframeSphere size={compact ? 30 : 64} colorVar="--bg" className="mag-cover-sphere" />
           <span className="mag-cover-date">{formatDate(article.publishDate)}</span>
         </div>
       ) : (
@@ -97,7 +101,17 @@ type Phase = 'intro' | 'exit' | 'revealed'
 export default function ArticlesContent({ articles }: { articles: Article[] }) {
   const [selected, setSelected] = useState<Article | null>(null)
   const [phase, setPhase] = useState<Phase>('intro')
+  const [compact, setCompact] = useState(false)
   const volumes = Array.from(getArticlesByVolume(articles).entries()).sort(([a], [b]) => a - b)
+
+  // Compact mobile card layout — all 4 covers on one screen, no scrolling.
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 480px)')
+    const update = () => setCompact(mq.matches)
+    update()
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
+  }, [])
 
   const introTitleRef = useRef<HTMLHeadingElement>(null)
   const mainTitleRef  = useRef<HTMLHeadingElement>(null)
@@ -206,6 +220,7 @@ export default function ArticlesContent({ articles }: { articles: Article[] }) {
                     key={article.slug}
                     article={article}
                     locked={isLocked(article)}
+                    compact={compact}
                     onSelect={() => setSelected(article)}
                   />
                 ))}
