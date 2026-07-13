@@ -1017,12 +1017,18 @@ html.articles-intro-active .articles-page-nav {
   }
 
   /* Top padding clears the fixed nav (measured ~63px tall here) with
-     real breathing room, so "Volume I" is never tucked under it. */
-  .mag-main { padding: 88px 14px 16px; gap: 16px; }
+     real breathing room, so "Volume I" is never tucked under it.
+     Left/right padding matches nav's own 10px inset (below) so the
+     header and cards line up flush with it instead of sitting 4px
+     further in. */
+  .mag-main { padding: 88px 10px 16px; gap: 16px; }
   .mag-volume { gap: 10px; }
-  .mag-vol-header { padding-bottom: 10px; gap: 10px; }
+
+  /* Centered dead in the middle of the screen — the rule line only
+     makes sense next to a left-aligned title, so drop it here. */
+  .mag-vol-header { justify-content: center; padding-bottom: 10px; gap: 10px; }
   .mag-vol-title { font-size: 15px; }
-  .mag-vol-rule { margin-bottom: 1px; }
+  .mag-vol-rule { display: none; }
 
   /* Compact stack — all 4 covers fit on one screen, no scrolling.
      Thin full-width bars instead of the tall 2/3 desktop card shape. */
@@ -1039,6 +1045,12 @@ html.articles-intro-active .articles-page-nav {
   .mag-cover:not(.mag-cover--locked) {
     align-items: center;
     text-align: center;
+  }
+  .mag-cover:not(.mag-cover--locked) .mag-cover-num {
+    font-weight: 600;
+    font-size: 9px;
+    opacity: 0.55;
+    margin-top: 6px;
   }
   .mag-cover:not(.mag-cover--locked) .mag-cover-title {
     flex: 1;
