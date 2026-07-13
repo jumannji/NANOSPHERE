@@ -12,10 +12,6 @@
   --sphere-rgb: 18,18,20;
   --pill-red: #b33a3a;
   --pill-blue: #2f5bb0;
-  /* Minion isn't distributed on Google Fonts (Adobe-licensed) — falls
-     back to a system copy if installed, otherwise a serif of similar
-     character. The comparison label still names it "Minion" either way. */
-  --font-minion: 'Minion Pro', 'Minion Variable Concept', Georgia, 'Times New Roman', serif;
 }
 [data-theme="2"] {
   --bg: #c8fffb;
@@ -775,6 +771,22 @@ html.articles-intro-active .articles-page-nav {
   padding: 140px 60px 64px;
 }
 
+/* Desktop/tablet: metadata left, cover image right, top-aligned.
+   Mobile: single column (image is hidden here — it reappears at the
+   top of the white reading zone instead, see .article-cover-mobile). */
+.article-top-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 40px;
+  align-items: start;
+}
+@media (min-width: 769px) {
+  .article-top-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 420px);
+    gap: 56px;
+  }
+}
+
 .article-title {
   font-family: var(--font-press-start), monospace;
   font-weight: 400;
@@ -784,7 +796,6 @@ html.articles-intro-active .articles-page-nav {
   line-height: 1.6;
   letter-spacing: 0.02em;
   color: var(--ink);
-  max-width: 780px;
   margin-bottom: 28px;
   opacity: 0.92;
 }
@@ -818,16 +829,24 @@ html.articles-intro-active .articles-page-nav {
   color: var(--ink);
   opacity: 0.72;
   line-height: 1.35;
-  max-width: 640px;
-  margin-bottom: 36px;
 }
 
 .article-cover {
   display: block;
   width: 100%;
-  max-width: 720px;
-  height: auto;
+  aspect-ratio: 4/5;
+  object-fit: cover;
   border: 0.5px solid rgba(15,15,16,0.14);
+}
+
+/* Two copies of the cover image exist in the DOM (desktop, in
+   .article-top-grid, vs mobile, at the top of the reading zone) —
+   only one is ever visible at a given width. */
+.article-cover-desktop { display: none; }
+.article-cover-mobile { display: block; margin-bottom: 40px; }
+@media (min-width: 769px) {
+  .article-cover-desktop { display: block; }
+  .article-cover-mobile { display: none; }
 }
 
 /* ── Reading zone — fixed white/black surface, independent of theme ── */
@@ -843,46 +862,8 @@ html.articles-intro-active .articles-page-nav {
   padding: 56px 24px 140px;
 }
 
-/* Font comparison sampler — first paragraph repeated once per candidate
-   body font, labelled, so a final choice can be made by eye. */
-.font-compare {
-  margin-bottom: 64px;
-  padding-bottom: 48px;
-  border-bottom: 1px solid rgba(0,0,0,0.12);
-}
-
-.font-compare-heading {
-  font-family: var(--font-cinzel), serif;
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: rgba(0,0,0,0.4);
-  margin-bottom: 32px;
-}
-
-.font-sample { margin-bottom: 40px; }
-.font-sample:last-child { margin-bottom: 0; }
-
-.font-sample-label {
-  display: block;
-  font-family: var(--font-press-start), monospace;
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(0,0,0,0.5);
-  margin-bottom: 12px;
-}
-
-.font-sample-text {
-  font-size: clamp(17px, 14.5px + 1vw, 20px);
-  line-height: 1.7;
-  color: #000;
-}
-
-/* Real article body — Cormorant Garamond is the current default until
-   a font is chosen from the sampler above. */
 .article-body {
-  font-family: var(--font-cormorant-garamond), Georgia, serif;
+  font-family: var(--font-newsreader), Georgia, serif;
   font-size: clamp(17px, 14.5px + 1vw, 20px);
   line-height: 1.7;
   color: #000;
@@ -921,6 +902,97 @@ html.articles-intro-active .articles-page-nav {
   text-underline-offset: 3px;
 }
 
+/* ── "What Do You Think" comments — local-only UI for now ── */
+.comments {
+  margin-top: 80px;
+  padding-top: 48px;
+  border-top: 1px solid rgba(0,0,0,0.12);
+}
+
+.comments-heading {
+  font-family: var(--font-italiana), serif;
+  font-weight: 400;
+  font-size: clamp(22px, 3vw, 32px);
+  color: #000;
+  margin-bottom: 28px;
+}
+
+.comments-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 44px;
+}
+
+.comments-name-input,
+.comments-text-input {
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-size: 15px;
+  padding: 12px 14px;
+  border: 1px solid rgba(0,0,0,0.2);
+  border-radius: 2px;
+  background: #fff;
+  color: #000;
+}
+.comments-text-input { resize: vertical; }
+.comments-name-input:focus,
+.comments-text-input:focus {
+  outline: none;
+  border-color: rgba(0,0,0,0.5);
+}
+
+.comments-submit {
+  all: unset;
+  align-self: flex-start;
+  cursor: crosshair;
+  font-family: var(--font-cinzel), serif;
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  padding: 13px 32px;
+  background: #000;
+  color: #fff;
+  border-radius: 1px;
+  transition: opacity 200ms ease;
+}
+.comments-submit:hover { opacity: 0.78; }
+
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.comments-empty {
+  font-family: var(--font-cinzel), serif;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(0,0,0,0.4);
+}
+
+.comment-item {
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+  padding-bottom: 20px;
+}
+
+.comment-name {
+  display: block;
+  font-family: var(--font-cinzel), serif;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(0,0,0,0.5);
+  margin-bottom: 6px;
+}
+
+.comment-text {
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #000;
+}
+
 /* ── Locked article page — same sphere placeholder as the archive cards ── */
 .article-locked {
   display: flex;
@@ -949,8 +1021,8 @@ html.articles-intro-active .articles-page-nav {
 @media (max-width: 768px) {
   .article-top { padding: 116px 24px 44px; }
   .article-reading-inner { padding: 44px 20px 110px; }
-  .font-compare { margin-bottom: 48px; padding-bottom: 36px; }
   .article-body { gap: 24px; }
+  .comments { margin-top: 56px; padding-top: 36px; }
 }
 
 @media (max-width: 480px) {
@@ -1027,7 +1099,8 @@ html.articles-intro-active .articles-page-nav {
   }
 
   .mag-main { padding: 70px 16px 48px; gap: 40px; }
-  .mag-row { grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 0; }
+  /* One cover per row — scroll to the next, rather than a cramped 2-up grid */
+  .mag-row { grid-template-columns: 1fr; gap: 24px; padding: 0; }
   .mag-cover-title { font-size: 14px; }
   .mag-modal-right { padding: 28px 24px; gap: 14px; }
   .mag-modal-title { font-size: 13px; }
@@ -1049,7 +1122,7 @@ html.articles-intro-active .articles-page-nav {
   .nav-links a.pill { padding: 5px 6px; }
   .nav-links--sphere { column-gap: 8px; }
   .nav-group-left, .nav-group-right { gap: 8px; }
-  .mag-row { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .mag-row { grid-template-columns: 1fr; gap: 20px; }
 }
 
 /* ═══════════════════════════════════════════════════════════

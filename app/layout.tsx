@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Cinzel, Italiana, Press_Start_2P, Cormorant_Garamond, EB_Garamond, Fraunces, Newsreader } from 'next/font/google'
+import { Cinzel, Italiana, Press_Start_2P, Newsreader } from 'next/font/google'
 import './globals.css'
 import DynamicFavicon from '@/components/DynamicFavicon'
 
@@ -24,28 +24,7 @@ const pressStart2P = Press_Start_2P({
   display: 'swap',
 })
 
-// Article body font candidates — see the comparison sampler on article pages.
-const cormorantGaramond = Cormorant_Garamond({
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  variable: '--font-cormorant-garamond',
-  display: 'swap',
-})
-
-const ebGaramond = EB_Garamond({
-  subsets: ['latin'],
-  weight: ['400', '500'],
-  variable: '--font-eb-garamond',
-  display: 'swap',
-})
-
-const fraunces = Fraunces({
-  subsets: ['latin'],
-  weight: ['400', '500'],
-  variable: '--font-fraunces',
-  display: 'swap',
-})
-
+// Article body font.
 const newsreader = Newsreader({
   subsets: ['latin'],
   weight: ['400', '500'],
@@ -65,7 +44,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${cinzel.variable} ${italiana.variable} ${pressStart2P.variable} ${cormorantGaramond.variable} ${ebGaramond.variable} ${fraunces.variable} ${newsreader.variable}`}>
+    <html lang="en" className={`${cinzel.variable} ${italiana.variable} ${pressStart2P.variable} ${newsreader.variable}`}>
       <head>
         {/* Runs synchronously before paint — no theme flash */}
         <script dangerouslySetInnerHTML={{ __html: `(function(){var h=location.pathname==='/';var s=sessionStorage.getItem('ns-theme');var t;if(h){t=String(Math.floor(Math.random()*4)+1);sessionStorage.setItem('ns-theme',t);}else{t=s||String(Math.floor(Math.random()*4)+1);if(!s)sessionStorage.setItem('ns-theme',t);}if(t!=='1')document.documentElement.dataset.theme=t;})()` }} />
