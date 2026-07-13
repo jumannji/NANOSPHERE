@@ -908,97 +908,6 @@ html.articles-intro-active .articles-page-nav {
   text-underline-offset: 3px;
 }
 
-/* ── "What Do You Think" comments — local-only UI for now ── */
-.comments {
-  margin-top: 80px;
-  padding-top: 48px;
-  border-top: 1px solid rgba(0,0,0,0.12);
-}
-
-.comments-heading {
-  font-family: var(--font-italiana), serif;
-  font-weight: 400;
-  font-size: clamp(22px, 3vw, 32px);
-  color: #000;
-  margin-bottom: 28px;
-}
-
-.comments-form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 44px;
-}
-
-.comments-name-input,
-.comments-text-input {
-  font-family: var(--font-newsreader), Georgia, serif;
-  font-size: 15px;
-  padding: 12px 14px;
-  border: 1px solid rgba(0,0,0,0.2);
-  border-radius: 2px;
-  background: #fff;
-  color: #000;
-}
-.comments-text-input { resize: vertical; }
-.comments-name-input:focus,
-.comments-text-input:focus {
-  outline: none;
-  border-color: rgba(0,0,0,0.5);
-}
-
-.comments-submit {
-  all: unset;
-  align-self: flex-start;
-  cursor: crosshair;
-  font-family: var(--font-cinzel), serif;
-  font-size: 10px;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-  padding: 13px 32px;
-  background: #000;
-  color: #fff;
-  border-radius: 1px;
-  transition: opacity 200ms ease;
-}
-.comments-submit:hover { opacity: 0.78; }
-
-.comments-list {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.comments-empty {
-  font-family: var(--font-cinzel), serif;
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(0,0,0,0.4);
-}
-
-.comment-item {
-  border-bottom: 1px solid rgba(0,0,0,0.08);
-  padding-bottom: 20px;
-}
-
-.comment-name {
-  display: block;
-  font-family: var(--font-cinzel), serif;
-  font-size: 10px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: rgba(0,0,0,0.5);
-  margin-bottom: 6px;
-}
-
-.comment-text {
-  font-family: var(--font-newsreader), Georgia, serif;
-  font-size: 16px;
-  line-height: 1.6;
-  color: #000;
-}
-
 /* ── Locked article page — same sphere placeholder as the archive cards ── */
 .article-locked {
   display: flex;
@@ -1028,7 +937,6 @@ html.articles-intro-active .articles-page-nav {
   .article-top { padding: 116px 24px 44px; }
   .article-reading-inner { padding: 44px 20px 110px; }
   .article-body { gap: 24px; }
-  .comments { margin-top: 56px; padding-top: 36px; }
 }
 
 @media (max-width: 480px) {

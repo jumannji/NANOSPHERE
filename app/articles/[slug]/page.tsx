@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { PortableText, type PortableTextComponents } from '@portabletext/react'
 import ArticleFoldingNav from '@/components/ArticleFoldingNav'
-import ArticleComments from '@/components/ArticleComments'
 import CornerBrackets from '@/components/CornerBrackets'
 import WireframeSphere from '@/components/WireframeSphere'
 import { client } from '@/lib/sanity/client'
@@ -124,8 +123,6 @@ export default async function ArticlePage({ params }: Props) {
                   <PortableText value={article.body} components={portableTextComponents} />
                 </div>
               )}
-
-              <ArticleComments />
             </div>
           </div>
         )}
