@@ -46,6 +46,7 @@
 
 [data-theme="4"] .mag-cover-num,
 [data-theme="4"] .mag-cover-title,
+[data-theme="4"] .mag-cover-date,
 [data-theme="4"] .mag-modal-left-num,
 [data-theme="4"] .mag-modal-left-title,
 [data-theme="4"] .mag-modal-eyebrow,
@@ -835,10 +836,14 @@ html.articles-intro-active .articles-page-nav {
 
 /* Two copies of the cover image exist in the DOM (desktop, in
    .article-top-grid, vs mobile, at the top of the reading zone) —
-   only one is ever visible at a given width. */
+   only one is ever visible at a given width. The wrapper itself (not
+   just the img) has to be hidden too, or the grid's gap still reserves
+   space for an empty second row on mobile. */
+.article-top-image { display: none; }
 .article-cover-desktop { display: none; }
 .article-cover-mobile { display: block; margin-bottom: 40px; }
 @media (min-width: 769px) {
+  .article-top-image { display: block; }
   .article-cover-desktop { display: block; }
   .article-cover-mobile { display: none; }
 }
@@ -934,13 +939,19 @@ html.articles-intro-active .articles-page-nav {
 }
 
 @media (max-width: 768px) {
-  .article-top { padding: 116px 24px 44px; }
+  .article-top { padding: 116px 24px 40px; }
   .article-reading-inner { padding: 44px 20px 110px; }
   .article-body { gap: 24px; }
+
+  /* Single-column here (the grid's image column is hidden) — center
+     the title/eyebrow/meta as a balanced block instead of the
+     desktop's left-aligned-next-to-image treatment. */
+  .article-top-text { text-align: center; }
+  .article-meta-row { justify-content: center; }
 }
 
 @media (max-width: 480px) {
-  .article-top { padding: 104px 18px 36px; }
+  .article-top { padding: 104px 18px 32px; }
   .article-title { margin-bottom: 20px; }
   .article-meta-row { flex-wrap: wrap; margin-bottom: 22px; }
 }
@@ -1021,19 +1032,22 @@ html.articles-intro-active .articles-page-nav {
      Left/right padding matches nav's own 10px inset (below) so the
      header and cards line up flush with it instead of sitting 4px
      further in. */
-  .mag-main { padding: 88px 10px 16px; gap: 16px; }
-  .mag-volume { gap: 10px; }
+  /* Hard-capped (not min-height) so the flex children below can fill
+     it exactly rather than leaving leftover space at the bottom. */
+  .mag-main { height: 100dvh; min-height: 100dvh; padding: 88px 10px 16px; gap: 16px; }
+  .mag-volume { flex: 1; min-height: 0; gap: 10px; }
 
   /* Centered dead in the middle of the screen — the rule line only
      makes sense next to a left-aligned title, so drop it here. */
-  .mag-vol-header { justify-content: center; padding-bottom: 10px; gap: 10px; }
+  .mag-vol-header { justify-content: center; padding-bottom: 10px; gap: 10px; flex-shrink: 0; }
   .mag-vol-title { font-size: 15px; }
   .mag-vol-rule { display: none; }
 
-  /* Compact stack — all 4 covers fit on one screen, no scrolling.
-     Thin full-width bars instead of the tall 2/3 desktop card shape. */
-  .mag-row { grid-template-columns: 1fr; gap: 12px; padding: 0; }
-  .mag-card { aspect-ratio: auto; height: 104px; }
+  /* Cards fill whatever height remains below the header — flex:1 each,
+     rather than a fixed px height — so they distribute evenly across
+     the full screen with no dead space, on any phone size. */
+  .mag-row { display: flex; flex-direction: column; flex: 1; min-height: 0; gap: 12px; padding: 0; }
+  .mag-card { aspect-ratio: auto; flex: 1; min-height: 0; }
   .mag-cover { padding: 10px 16px; }
   .mag-cover-num { font-size: 6.5px; }
   .mag-cover-title { font-size: 14px; line-height: 1.15; }
@@ -1081,7 +1095,6 @@ html.articles-intro-active .articles-page-nav {
   .nav-links a.pill { padding: 5px 6px; }
   .nav-links--sphere { column-gap: 8px; }
   .nav-group-left, .nav-group-right { gap: 8px; }
-  .mag-row { grid-template-columns: 1fr; gap: 20px; }
 }
 
 /* ═══════════════════════════════════════════════════════════
