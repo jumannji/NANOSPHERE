@@ -39,6 +39,24 @@ export function getWordCount(plainText?: string | null): number {
   return plainText.trim().split(/\s+/).filter(Boolean).length
 }
 
+export function estimateReadingMinutes(wordCount: number): number {
+  return Math.max(1, Math.round(wordCount / 200))
+}
+
+interface PortableTextSpan { text?: string }
+interface PortableTextBlock { _type: string; children?: PortableTextSpan[] }
+
+// Pulls the plain text of the first paragraph block out of a Portable
+// Text body, for the font-comparison sampler on the article page.
+export function getFirstParagraphText(body: unknown): string | null {
+  if (!Array.isArray(body)) return null
+  const block = body.find(
+    (b): b is PortableTextBlock => !!b && typeof b === 'object' && (b as PortableTextBlock)._type === 'block',
+  )
+  const text = block?.children?.map(c => c.text ?? '').join('').trim()
+  return text || null
+}
+
 export function getArticlesByVolume(articles: Article[]): Map<number, Article[]> {
   const map = new Map<number, Article[]>()
   for (const a of articles) {

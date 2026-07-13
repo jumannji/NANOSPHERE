@@ -12,6 +12,10 @@
   --sphere-rgb: 18,18,20;
   --pill-red: #b33a3a;
   --pill-blue: #2f5bb0;
+  /* Minion isn't distributed on Google Fonts (Adobe-licensed) — falls
+     back to a system copy if installed, otherwise a serif of similar
+     character. The comparison label still names it "Minion" either way. */
+  --font-minion: 'Minion Pro', 'Minion Variable Concept', Georgia, 'Times New Roman', serif;
 }
 [data-theme="2"] {
   --bg: #c8fffb;
@@ -86,6 +90,18 @@ nav {
   align-items: center;
   gap: 22px;
   border-bottom: 0.5px solid rgba(15,15,16,0.16);
+  transition: transform 380ms cubic-bezier(0.22,1,0.36,1);
+}
+
+/* Folded while scrolling down an article — slides fully off-screen so
+   the sphere/links never sit over the reading column, then eases back
+   in on scroll-up. */
+nav.nav-folded {
+  transform: translateY(-120%);
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  nav { transition: none; }
 }
 
 .nav-links {
@@ -750,15 +766,50 @@ html.articles-intro-active .articles-page-nav {
 
 /* ---------- Individual article page ---------- */
 
-.article-meta {
+/* Themed "cover" zone — title, meta, subtitle, cover image. Sits on the
+   page's normal var(--bg) theme color; only the reading zone below
+   switches to a fixed white/black reading surface. */
+.article-top {
+  position: relative;
+  z-index: 3;
+  padding: 140px 60px 64px;
+}
+
+.article-title {
+  font-family: var(--font-press-start), monospace;
+  font-weight: 400;
+  /* Press Start 2P is very wide per character — sized conservatively so
+     longer titles wrap onto 2-3 lines instead of overflowing. */
+  font-size: clamp(16px, 3.2vw, 30px);
+  line-height: 1.6;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  max-width: 780px;
+  margin-bottom: 28px;
+  opacity: 0.92;
+}
+
+.article-eyebrow {
   font-family: var(--font-cinzel), serif;
   font-size: 9px;
-  letter-spacing: 0.20em;
+  letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: rgba(15,15,16,0.45);
-  font-weight: 400;
-  margin-bottom: 18px;
+  color: rgba(15,15,16,0.42);
+  margin-bottom: 10px;
 }
+
+.article-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-cinzel), serif;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(15,15,16,0.55);
+  margin-bottom: 28px;
+}
+.article-meta-row span[aria-hidden] { opacity: 0.5; }
 
 .article-subtitle {
   font-family: var(--font-italiana), serif;
@@ -776,28 +827,75 @@ html.articles-intro-active .articles-page-nav {
   width: 100%;
   max-width: 720px;
   height: auto;
-  margin-bottom: 40px;
   border: 0.5px solid rgba(15,15,16,0.14);
 }
 
-.article-body {
+/* ── Reading zone — fixed white/black surface, independent of theme ── */
+.article-reading {
+  position: relative;
+  z-index: 3;
+  background: #ffffff;
+}
+
+.article-reading-inner {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 56px 24px 140px;
+}
+
+/* Font comparison sampler — first paragraph repeated once per candidate
+   body font, labelled, so a final choice can be made by eye. */
+.font-compare {
+  margin-bottom: 64px;
+  padding-bottom: 48px;
+  border-bottom: 1px solid rgba(0,0,0,0.12);
+}
+
+.font-compare-heading {
   font-family: var(--font-cinzel), serif;
-  font-size: 13px;
-  letter-spacing: 0.03em;
-  line-height: 2;
-  color: rgba(15,15,16,0.68);
-  max-width: 620px;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(0,0,0,0.4);
+  margin-bottom: 32px;
+}
+
+.font-sample { margin-bottom: 40px; }
+.font-sample:last-child { margin-bottom: 0; }
+
+.font-sample-label {
+  display: block;
+  font-family: var(--font-press-start), monospace;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(0,0,0,0.5);
+  margin-bottom: 12px;
+}
+
+.font-sample-text {
+  font-size: clamp(17px, 14.5px + 1vw, 20px);
+  line-height: 1.7;
+  color: #000;
+}
+
+/* Real article body — Cormorant Garamond is the current default until
+   a font is chosen from the sampler above. */
+.article-body {
+  font-family: var(--font-cormorant-garamond), Georgia, serif;
+  font-size: clamp(17px, 14.5px + 1vw, 20px);
+  line-height: 1.7;
+  color: #000;
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 30px;
 }
 
 .article-body-h2 {
   font-family: var(--font-italiana), serif;
   font-weight: 400;
-  font-size: clamp(22px, 3vw, 34px);
-  color: var(--ink);
-  opacity: 0.88;
+  font-size: clamp(24px, 3vw, 36px);
+  color: #000;
   letter-spacing: 0.02em;
   margin-top: 10px;
 }
@@ -805,14 +903,13 @@ html.articles-intro-active .articles-page-nav {
 .article-body-h3 {
   font-family: var(--font-italiana), serif;
   font-weight: 400;
-  font-size: clamp(18px, 2.4vw, 24px);
-  color: var(--ink);
-  opacity: 0.85;
+  font-size: clamp(20px, 2.4vw, 26px);
+  color: #000;
   letter-spacing: 0.02em;
 }
 
 .article-body-quote {
-  border-left: 2px solid rgba(15,15,16,0.2);
+  border-left: 2px solid rgba(0,0,0,0.2);
   padding-left: 20px;
   font-style: italic;
   opacity: 0.85;
@@ -842,6 +939,24 @@ html.articles-intro-active .articles-page-nav {
   color: var(--ink);
   opacity: 0.42;
   font-weight: 400;
+}
+
+/* ---------- Article page responsive ---------- */
+@media (max-width: 1024px) {
+  .article-top { padding: 132px 40px 56px; }
+}
+
+@media (max-width: 768px) {
+  .article-top { padding: 116px 24px 44px; }
+  .article-reading-inner { padding: 44px 20px 110px; }
+  .font-compare { margin-bottom: 48px; padding-bottom: 36px; }
+  .article-body { gap: 24px; }
+}
+
+@media (max-width: 480px) {
+  .article-top { padding: 104px 18px 36px; }
+  .article-title { margin-bottom: 20px; }
+  .article-meta-row { flex-wrap: wrap; margin-bottom: 22px; }
 }
 
 /* (articles layout lives in .mag-* above) */

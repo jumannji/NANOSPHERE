@@ -1,12 +1,21 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { PortableText, type PortableTextComponents } from '@portabletext/react'
-import InnerPageShell from '@/components/InnerPageShell'
+import ArticleFoldingNav from '@/components/ArticleFoldingNav'
+import CornerBrackets from '@/components/CornerBrackets'
 import WireframeSphere from '@/components/WireframeSphere'
 import { client } from '@/lib/sanity/client'
 import { urlFor } from '@/lib/sanity/image'
 import { ARTICLE_QUERY, ARTICLE_SLUGS_QUERY } from '@/lib/sanity/queries'
-import { toRoman, isLocked, formatDate, getWordCount, type Article } from '@/lib/articles'
+import {
+  toRoman,
+  isLocked,
+  formatDate,
+  getWordCount,
+  estimateReadingMinutes,
+  getFirstParagraphText,
+  type Article,
+} from '@/lib/articles'
 
 interface Props { params: { slug: string } }
 
@@ -46,6 +55,17 @@ const portableTextComponents: PortableTextComponents = {
   },
 }
 
+// Candidate body fonts, for side-by-side comparison on the live page.
+// Cormorant Garamond (first) is the current default for the real body
+// text below, until a final choice is made.
+const FONT_SAMPLES = [
+  { label: 'Cormorant Garamond', cssVar: '--font-cormorant-garamond' },
+  { label: 'EB Garamond', cssVar: '--font-eb-garamond' },
+  { label: 'Fraunces', cssVar: '--font-fraunces' },
+  { label: 'Newsreader', cssVar: '--font-newsreader' },
+  { label: 'Minion', cssVar: '--font-minion' },
+]
+
 export default async function ArticlePage({ params }: Props) {
   const article = await client.fetch<Article | null>(
     ARTICLE_QUERY,
@@ -56,33 +76,69 @@ export default async function ArticlePage({ params }: Props) {
 
   const locked = isLocked(article)
   const coverUrl = !locked && article.coverImage ? urlFor(article.coverImage).width(1200).url() : null
+  const readingMinutes = estimateReadingMinutes(getWordCount(article.plainText))
+  const firstParagraph = !locked ? getFirstParagraphText(article.body) : null
 
   return (
-    <InnerPageShell title={article.title}>
-      {locked ? (
-        <div className="article-locked">
-          <WireframeSphere size={140} className="article-locked-sphere" />
-          <span className="article-locked-label">Coming&nbsp;{formatDate(article.publishDate)}</span>
-        </div>
-      ) : (
-        <>
-          <div className="article-meta">
-            Volume&nbsp;{toRoman(article.volume)}&nbsp;·&nbsp;Article&nbsp;{article.articleNumber}
-            &nbsp;·&nbsp;{formatDate(article.publishDate)}
-            &nbsp;·&nbsp;{getWordCount(article.plainText).toLocaleString()}&nbsp;words
-          </div>
-          {article.subtitle && <p className="article-subtitle">{article.subtitle}</p>}
-          {coverUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={coverUrl} alt="" className="article-cover" />
-          )}
-          {Array.isArray(article.body) && article.body.length > 0 && (
-            <div className="article-body">
-              <PortableText value={article.body} components={portableTextComponents} />
+    <>
+      <ArticleFoldingNav />
+      <CornerBrackets />
+      <div className="vignette" />
+
+      <div className="article-page">
+        <div className="article-top">
+          <h1 className="article-title">{article.title}</h1>
+
+          {locked ? (
+            <div className="article-locked">
+              <WireframeSphere size={140} className="article-locked-sphere" />
+              <span className="article-locked-label">Coming&nbsp;{formatDate(article.publishDate)}</span>
             </div>
+          ) : (
+            <>
+              <div className="article-eyebrow">
+                Volume&nbsp;{toRoman(article.volume)}&nbsp;·&nbsp;Article&nbsp;{article.articleNumber}
+              </div>
+              <div className="article-meta-row">
+                <span>{formatDate(article.publishDate)}</span>
+                <span aria-hidden="true">·</span>
+                <span>{readingMinutes}&nbsp;min&nbsp;read</span>
+              </div>
+              {article.subtitle && <p className="article-subtitle">{article.subtitle}</p>}
+              {coverUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={coverUrl} alt="" className="article-cover" />
+              )}
+            </>
           )}
-        </>
-      )}
-    </InnerPageShell>
+        </div>
+
+        {!locked && (
+          <div className="article-reading">
+            <div className="article-reading-inner">
+              {firstParagraph && (
+                <div className="font-compare">
+                  <div className="font-compare-heading">Font comparison — first paragraph</div>
+                  {FONT_SAMPLES.map(f => (
+                    <div key={f.label} className="font-sample">
+                      <span className="font-sample-label">{f.label}</span>
+                      <p className="font-sample-text" style={{ fontFamily: `var(${f.cssVar}), serif` }}>
+                        {firstParagraph}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {Array.isArray(article.body) && article.body.length > 0 && (
+                <div className="article-body">
+                  <PortableText value={article.body} components={portableTextComponents} />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   )
 }

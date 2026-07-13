@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { getArticlesByVolume, toRoman, isLocked, formatDate, getWordCount } from '@/lib/articles'
+import { getArticlesByVolume, toRoman, isLocked, formatDate, getWordCount, estimateReadingMinutes } from '@/lib/articles'
 import { navigateTo } from '@/lib/navigate'
 import { urlFor } from '@/lib/sanity/image'
 import WireframeSphere from '@/components/WireframeSphere'
@@ -72,7 +72,7 @@ function MagOverlay({ article, locked, onClose }: { article: Article; locked: bo
           <h2 className="mag-modal-title">{article.title}</h2>
           <div className="mag-modal-meta">
             <span className="mag-meta-row">{formatDate(article.publishDate)}</span>
-            {!locked && <span className="mag-meta-row">{getWordCount(article.plainText).toLocaleString()} words</span>}
+            {!locked && <span className="mag-meta-row">{estimateReadingMinutes(getWordCount(article.plainText))} min read</span>}
           </div>
           {locked ? (
             <button className="mag-read-btn mag-read-btn--disabled" disabled>

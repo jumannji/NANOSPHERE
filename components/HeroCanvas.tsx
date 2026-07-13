@@ -302,7 +302,11 @@ export default function HeroCanvas() {
             position: 'relative',
             fontFamily: "var(--font-press-start), var(--font-italiana), serif",
             fontWeight: 400,
-            fontSize: 'clamp(12px, 8vw, 100px)',
+            // Slightly higher floor + ramp than the original 8vw — the
+            // word is wide in this font, so this is deliberately a mild
+            // bump (not aggressive) to avoid clipping on narrow phones.
+            // Unchanged on desktop since the 100px ceiling is the same.
+            fontSize: 'clamp(22px, 8.7vw, 100px)',
             letterSpacing: '0',
             color: 'var(--logo-ink)',
             whiteSpace: 'nowrap',

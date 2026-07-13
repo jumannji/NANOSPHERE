@@ -6,11 +6,17 @@ import NavSphere from './NavSphere'
 import TransitionLink from './TransitionLink'
 import { navigateTo } from '@/lib/navigate'
 
-interface NavProps { showSphere?: boolean }
+interface NavProps {
+  showSphere?: boolean
+  /** Folds the whole nav bar off-screen (used while scrolling through an
+   *  article, so it doesn't obstruct the text). */
+  folded?: boolean
+}
 
-export default function Nav({ showSphere = false }: NavProps) {
+export default function Nav({ showSphere = false, folded = false }: NavProps) {
   const router = useRouter()
   const [revealed, setRevealed] = useState(false)
+  const navClassName = folded ? 'nav-folded' : undefined
 
   function handleSphereClick() {
     if (!revealed) {
@@ -23,7 +29,7 @@ export default function Nav({ showSphere = false }: NavProps) {
   // Homepage: plain flex row, no sphere
   if (!showSphere) {
     return (
-      <nav>
+      <nav className={navClassName}>
         <div className="nav-links">
           <TransitionLink href="/articles">Articles</TransitionLink>
           <TransitionLink href="/nanobazaar" className="pill">
@@ -64,7 +70,7 @@ export default function Nav({ showSphere = false }: NavProps) {
   }
 
   return (
-    <nav>
+    <nav className={navClassName}>
       <div className="nav-links nav-links--sphere">
         <div className="nav-group-left">
           <TransitionLink href="/articles" style={leftLink(80)}>Articles</TransitionLink>
