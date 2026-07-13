@@ -1016,21 +1016,38 @@ html.articles-intro-active .articles-page-nav {
     letter-spacing: 0.14em;
   }
 
-  .mag-main { padding: 56px 14px 16px; gap: 16px; }
-  .mag-volume { gap: 8px; }
-  .mag-vol-header { padding-bottom: 6px; gap: 10px; }
+  /* Top padding clears the fixed nav (measured ~63px tall here) with
+     real breathing room, so "Volume I" is never tucked under it. */
+  .mag-main { padding: 88px 14px 16px; gap: 16px; }
+  .mag-volume { gap: 10px; }
+  .mag-vol-header { padding-bottom: 10px; gap: 10px; }
   .mag-vol-title { font-size: 15px; }
   .mag-vol-rule { margin-bottom: 1px; }
 
   /* Compact stack — all 4 covers fit on one screen, no scrolling.
      Thin full-width bars instead of the tall 2/3 desktop card shape. */
   .mag-row { grid-template-columns: 1fr; gap: 12px; padding: 0; }
-  .mag-card { aspect-ratio: auto; height: 118px; }
-  .mag-cover { padding: 10px 14px; }
-  .mag-cover-num { font-size: 6px; }
+  .mag-card { aspect-ratio: auto; height: 104px; }
+  .mag-cover { padding: 10px 16px; }
+  .mag-cover-num { font-size: 6.5px; }
   .mag-cover-title { font-size: 14px; line-height: 1.15; }
   .mag-cover--locked { gap: 8px; }
   .mag-cover-date { font-size: 7px; }
+
+  /* Unlocked, collapsed card: "Article N" small at top, title large and
+     centered filling the rest — not the desktop top/bottom split. */
+  .mag-cover:not(.mag-cover--locked) {
+    align-items: center;
+    text-align: center;
+  }
+  .mag-cover:not(.mag-cover--locked) .mag-cover-title {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    line-height: 1.2;
+  }
 
   .mag-modal-right { padding: 28px 24px; gap: 14px; }
   .mag-modal-title { font-size: 13px; }

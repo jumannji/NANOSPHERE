@@ -28,7 +28,9 @@ function MagCard({ article, locked, compact, onSelect }: { article: Article; loc
           style={coverUrl ? { backgroundImage: `url(${coverUrl})` } : undefined}
         >
           <span className="mag-cover-num">
-            Vol.&nbsp;{toRoman(article.volume)}&nbsp;·&nbsp;{article.articleNumber}
+            {compact
+              ? <>Article&nbsp;{article.articleNumber}</>
+              : <>Vol.&nbsp;{toRoman(article.volume)}&nbsp;·&nbsp;{article.articleNumber}</>}
           </span>
           <h3 className="mag-cover-title">{article.title}</h3>
         </div>
