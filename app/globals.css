@@ -761,6 +761,58 @@ html.articles-intro-active .articles-page-nav {
   max-width: 560px;
 }
 
+/* ---------- About page ---------- */
+.about-page {
+  position: relative;
+  z-index: 3;
+  min-height: 100vh;
+  padding: 160px 24px 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* No gap here — .substack-signup-wrap already carries its own 48px
+     bottom padding (tuned to sit before the article ticker too), so an
+     extra flex gap on top of that would double up the spacing. */
+}
+
+.about-contact {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  text-align: center;
+}
+
+.about-contact-heading {
+  font-family: var(--font-press-start), monospace;
+  font-weight: 400;
+  font-size: clamp(15px, 2.2vw, 22px);
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  opacity: 0.9;
+}
+
+.about-contact-email {
+  font-family: var(--font-cinzel), serif;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  opacity: 0.72;
+  transition: opacity 200ms ease;
+}
+.about-contact-email:hover { opacity: 1; }
+
+@media (max-width: 768px) {
+  .about-page { padding: 132px 20px 80px; }
+}
+
+@media (max-width: 480px) {
+  .about-page { padding: 112px 16px 64px; }
+  .about-contact-email { font-size: 12px; letter-spacing: 0.06em; }
+}
+
 /* ---------- Individual article page ---------- */
 
 /* Themed "cover" zone — title, meta, subtitle, cover image. Sits on the
@@ -1044,7 +1096,8 @@ html.articles-intro-active .articles-page-nav {
 .kindness-ticker-track {
   display: flex;
   width: max-content;
-  animation: kindness-ticker-scroll 18s linear infinite;
+  /* 35% slower than the original 18s (18 / 0.65 ≈ 27.7s) */
+  animation: kindness-ticker-scroll 27.7s linear infinite;
 }
 
 .kindness-ticker-text {
