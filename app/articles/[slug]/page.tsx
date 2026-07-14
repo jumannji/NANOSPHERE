@@ -18,6 +18,8 @@ import {
 
 interface Props { params: { slug: string } }
 
+const TICKER_TEXT = Array(20).fill('KINDNESS IS RESISTANCE').join('    •    ')
+
 // Always render fresh — this page must reflect Sanity Studio edits on
 // the very next load, not a cached build-time or ISR snapshot.
 export const dynamic = 'force-dynamic'
@@ -126,6 +128,13 @@ export default async function ArticlePage({ params }: Props) {
             </div>
           </div>
         )}
+
+        <div className="kindness-ticker" aria-hidden="true">
+          <div className="kindness-ticker-track">
+            <span className="kindness-ticker-text">{TICKER_TEXT}</span>
+            <span className="kindness-ticker-text">{TICKER_TEXT}</span>
+          </div>
+        </div>
       </div>
     </>
   )

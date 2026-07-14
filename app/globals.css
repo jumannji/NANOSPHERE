@@ -826,11 +826,14 @@ html.articles-intro-active .articles-page-nav {
 }
 .article-meta-row span[aria-hidden] { opacity: 0.5; }
 
+/* Full image, no crop — the listing cards keep the 4/5 cover crop
+   (.mag-cover), but the full article view shows the complete upload
+   at its own aspect ratio. */
 .article-cover {
   display: block;
   width: 100%;
-  aspect-ratio: 4/5;
-  object-fit: cover;
+  height: auto;
+  margin: 0 auto;
   border: 0.5px solid rgba(15,15,16,0.14);
 }
 
@@ -931,6 +934,45 @@ html.articles-intro-active .articles-page-nav {
   color: var(--ink);
   opacity: 0.42;
   font-weight: 400;
+}
+
+/* ── "Kindness is resistance" ticker — bottom of every article page ── */
+.kindness-ticker {
+  position: relative;
+  z-index: 3;
+  overflow: hidden;
+  background: var(--ink);
+  padding: 22px 0;
+}
+
+.kindness-ticker-track {
+  display: flex;
+  width: max-content;
+  animation: kindness-ticker-scroll 18s linear infinite;
+}
+
+.kindness-ticker-text {
+  display: inline-flex;
+  white-space: nowrap;
+  font-family: var(--font-press-start), monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--bg);
+  padding-right: 48px;
+}
+
+@keyframes kindness-ticker-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kindness-ticker-track { animation: none; }
+}
+
+@media (max-width: 480px) {
+  .kindness-ticker { padding: 16px 0; }
+  .kindness-ticker-text { font-size: 10px; padding-right: 32px; }
 }
 
 /* ---------- Article page responsive ---------- */
