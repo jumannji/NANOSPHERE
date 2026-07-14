@@ -7,7 +7,7 @@ export default function SubstackSignup() {
     <div className="substack-signup">
       <span className="substack-signup-heading">Join the List</span>
       <p className="substack-signup-desc">
-        New articles every Monday. Tag along
+        New articles every Monday
       </p>
       <form
         className="substack-signup-form"

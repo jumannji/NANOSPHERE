@@ -1,12 +1,18 @@
 import { Metadata } from 'next'
-import InnerPageShell from '@/components/InnerPageShell'
+import Nav from '@/components/Nav'
+import CornerBrackets from '@/components/CornerBrackets'
 
 export const metadata: Metadata = { title: 'Archives — NanoSphere' }
 
 export default function ArchivesPage() {
   return (
-    <InnerPageShell title="Archives">
-      The digital record of everything we&apos;ve made and why we made it.
-    </InnerPageShell>
+    <>
+      <Nav showSphere />
+      <CornerBrackets />
+      <div className="vignette" />
+      <div className="archives-page">
+        <p className="archives-message">nothing to see here, yet</p>
+      </div>
+    </>
   )
 }

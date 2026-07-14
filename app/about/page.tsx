@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import Nav from '@/components/Nav'
 import CornerBrackets from '@/components/CornerBrackets'
+import ContactForm from '@/components/ContactForm'
 import SiteFooter from '@/components/SiteFooter'
 import SubstackSignup from '@/components/SubstackSignup'
 
@@ -20,9 +21,7 @@ export default function AboutPage() {
 
         <div className="about-contact">
           <h2 className="about-contact-heading">Reach out to us @</h2>
-          <a className="about-contact-email" href="mailto:nanosphere@pm.me">
-            nanosphere@pm.me
-          </a>
+          <ContactForm />
         </div>
       </div>
 
