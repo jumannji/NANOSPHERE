@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { PortableText, type PortableTextComponents } from '@portabletext/react'
 import ArticleFoldingNav from '@/components/ArticleFoldingNav'
 import CornerBrackets from '@/components/CornerBrackets'
+import SubstackSignup from '@/components/SubstackSignup'
 import WireframeSphere from '@/components/WireframeSphere'
 import { client } from '@/lib/sanity/client'
 import { urlFor } from '@/lib/sanity/image'
@@ -128,6 +129,10 @@ export default async function ArticlePage({ params }: Props) {
             </div>
           </div>
         )}
+
+        <div className="substack-signup-wrap">
+          <SubstackSignup />
+        </div>
 
         <div className="kindness-ticker" aria-hidden="true">
           <div className="kindness-ticker-track">

@@ -861,7 +861,9 @@ html.articles-intro-active .articles-page-nav {
 .article-reading-inner {
   max-width: 680px;
   margin: 0 auto;
-  padding: 56px 24px 140px;
+  /* Bottom padding is modest — the signup panel + ticker below now
+     provide the page's closing weight, not empty whitespace. */
+  padding: 56px 24px 56px;
 }
 
 /* Standfirst — sits above the body in the white reading zone, same
@@ -936,6 +938,100 @@ html.articles-intro-active .articles-page-nav {
   font-weight: 400;
 }
 
+/* ── Substack signup — dark self-contained panel so it reads the same
+   whether it's dropped on the white article-reading zone or a themed
+   page background (About). Posts straight to Substack; no iframe. ── */
+.substack-signup {
+  background: var(--ink);
+  border: 0.5px solid rgba(255,255,255,0.1);
+  padding: 44px 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 14px;
+}
+
+.substack-signup-heading {
+  font-family: var(--font-press-start), monospace;
+  font-weight: 400;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  color: var(--bg);
+}
+
+.substack-signup-desc {
+  font-family: var(--font-cinzel), serif;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.55);
+  max-width: 340px;
+  line-height: 1.7;
+  margin-bottom: 6px;
+}
+
+.substack-signup-form {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 380px;
+}
+
+.substack-signup-input {
+  flex: 1 1 180px;
+  font-family: var(--font-cinzel), serif;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  text-transform: none;
+  padding: 13px 16px;
+  background: rgba(255,255,255,0.04);
+  border: 0.5px solid rgba(255,255,255,0.18);
+  border-radius: 1px;
+  color: #fafafa;
+}
+.substack-signup-input::placeholder { color: rgba(255,255,255,0.35); }
+.substack-signup-input:focus { outline: none; border-color: var(--bg); }
+
+.substack-signup-button {
+  all: unset;
+  cursor: crosshair;
+  font-family: var(--font-press-start), monospace;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 14px 26px;
+  background: var(--bg);
+  color: var(--ink);
+  text-align: center;
+  transition: opacity 200ms ease;
+}
+.substack-signup-button:hover { opacity: 0.78; }
+
+@media (max-width: 480px) {
+  .substack-signup { padding: 32px 22px; }
+  .substack-signup-heading { font-size: 12px; }
+  .substack-signup-form { max-width: 100%; }
+  .substack-signup-input { flex-basis: 100%; }
+  .substack-signup-button { flex: 1 1 100%; }
+}
+
+/* Centers the panel when it's dropped full-width on a page (article
+   pages, between the body and the ticker) rather than inline in a
+   text column (About page, where it just sits in normal flow). */
+.substack-signup-wrap {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  justify-content: center;
+  padding: 8px 24px 48px;
+}
+@media (max-width: 480px) {
+  .substack-signup-wrap { padding: 4px 16px 32px; }
+}
+
 /* ── "Kindness is resistance" ticker — bottom of every article page ── */
 .kindness-ticker {
   position: relative;
@@ -982,7 +1078,7 @@ html.articles-intro-active .articles-page-nav {
 
 @media (max-width: 768px) {
   .article-top { padding: 116px 24px 40px; }
-  .article-reading-inner { padding: 44px 20px 110px; }
+  .article-reading-inner { padding: 44px 20px 40px; }
   .article-body { gap: 24px; }
 
   /* Single-column here (the grid's image column is hidden) — center
