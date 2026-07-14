@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Cinzel, Italiana, Press_Start_2P, Newsreader } from 'next/font/google'
+import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 import DynamicFavicon from '@/components/DynamicFavicon'
 
@@ -53,6 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         {children}
         <DynamicFavicon />
+        <Analytics />
       </body>
     </html>
   )
